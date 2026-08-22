@@ -120,6 +120,21 @@ describe("buildTextFragment", () => {
     expect(buildTextFragment(entries, otherChannel)).toBe("Artist A");
   });
 
+  it("prefixes a reference name with @ if it wasn't entered with one", () => {
+    const artist = {
+      name: "Artist A",
+      websiteUrl: null,
+      socialReferences: [{ channelId: bluesky.id, referenceName: "artist.a.official" }],
+    };
+    const entries = [entry({ contributors: [{ role: "ORIGINAL", position: 0, artist }] })];
+    expect(buildTextFragment(entries, bluesky)).toBe("@artist.a.official");
+  });
+
+  it("doesn't double up the @ if the reference name already has one", () => {
+    const entries = [entry({ contributors: [{ role: "ORIGINAL", position: 0, artist: artistWithRefs }] })];
+    expect(buildTextFragment(entries, bluesky)).toBe("@a.bsky");
+  });
+
   it("joins multiple playlist entries with a comma", () => {
     const entries = [entry({ title: "One" }, 0), entry({ title: "Two" }, 1)];
     expect(buildTextFragment(entries, bluesky)).toBe("Artist A, Artist A");

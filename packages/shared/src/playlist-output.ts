@@ -91,7 +91,10 @@ export function buildTextFragment(entries: PlaylistEntryForOutput[], channel: Ou
 
 function referenceNameForChannel(artist: ArtistForOutput, channelId: number): string {
   const match = artist.socialReferences.find((ref) => ref.channelId === channelId);
-  return match?.referenceName ?? artist.name;
+  if (!match) return artist.name;
+  // "@" is the conventional prefix for a social handle; normalize here so it
+  // doesn't matter whether it was typed in when the reference was entered.
+  return match.referenceName.startsWith("@") ? match.referenceName : `@${match.referenceName}`;
 }
 
 function applyPattern(

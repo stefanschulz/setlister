@@ -173,27 +173,29 @@ export function TrackDialog({
               </Button>
             </div>
             {contributors.fields.map((field, index) => (
-              <div key={field.id} className="flex gap-2">
-                <Controller
-                  control={form.control}
-                  name={`contributors.${index}.artistId`}
-                  render={({ field }) => (
-                    <EntityCombobox
-                      items={(artists ?? []).map((artist) => ({ id: artist.id, label: artist.name }))}
-                      value={field.value || undefined}
-                      onChange={field.onChange}
-                      placeholder="Künstler"
-                      onCreateNew={() => setNewArtistIndex(index)}
-                      createNewLabel="Neuen Künstler anlegen…"
-                    />
-                  )}
-                />
+              <div key={field.id} className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <Controller
+                    control={form.control}
+                    name={`contributors.${index}.artistId`}
+                    render={({ field }) => (
+                      <EntityCombobox
+                        items={(artists ?? []).map((artist) => ({ id: artist.id, label: artist.name }))}
+                        value={field.value || undefined}
+                        onChange={field.onChange}
+                        placeholder="Künstler"
+                        onCreateNew={() => setNewArtistIndex(index)}
+                        createNewLabel="Neuen Künstler anlegen…"
+                      />
+                    )}
+                  />
+                </div>
                 <Controller
                   control={form.control}
                   name={`contributors.${index}.role`}
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-36">
+                      <SelectTrigger className="w-36 shrink-0">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
