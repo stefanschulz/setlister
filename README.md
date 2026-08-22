@@ -9,9 +9,9 @@ See [docs/konzept.md](docs/konzept.md) for the full requirements, data model, an
 ```
 apps/
   client/   # React + TypeScript + Vite frontend
-  server/   # Hono (Node.js) backend, serves the API and (in Docker) the built frontend
+  server/   # Hono (Node.js) backend: REST API, Drizzle/SQLite data layer, serves the built frontend in Docker
 packages/
-  shared/   # TS types/schemas shared between client and server
+  shared/   # TS types, Zod validation schemas, and output-formatting logic shared between client and server
 ```
 
 ## Development
@@ -20,8 +20,16 @@ Requires Node.js >= 22.
 
 ```bash
 npm install
-npm run dev:server   # starts the API on http://localhost:3000
-npm run dev:client   # starts the Vite dev server (proxies /api to the server above)
+npm run dev:server   # migrates the local SQLite DB, then starts the API on http://localhost:3000
+npm run dev:client   # starts the Vite dev server on http://localhost:5173 (proxies /api to the server above)
+```
+
+The dev server uses a local SQLite file at `apps/server/data/setlister.sqlite` (gitignored). Useful commands from `apps/server`:
+
+```bash
+npm run db:generate   # after changing src/db/schema.ts: generate a new migration
+npm run db:migrate    # apply pending migrations
+npm run db:seed       # populate the DB with example data (a compilation album covering every contributor role)
 ```
 
 Run tests across all workspaces:
@@ -32,10 +40,12 @@ npm test
 
 ## Running with Docker
 
-Builds both apps and serves the whole thing (API + frontend) from a single container:
+Builds both apps and serves the whole thing (API + frontend) from a single container, with the SQLite database persisted in a named volume across restarts:
 
 ```bash
 docker compose up --build
 ```
 
-Then open http://localhost:3000 — it shows the SetLister placeholder page and confirms the API is reachable (`/api/health`).
+Then open http://localhost:3000. To reset all data, remove the volume too: `docker compose down -v`.
+
+The Docker image is production-only (no `tsx`/dev tooling), so `db:seed` isn't available there — seed via the running app's UI or its REST API instead.
