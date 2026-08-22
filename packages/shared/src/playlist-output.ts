@@ -1,4 +1,5 @@
-import { formatContributorList, type ContributorRole } from "@setlister/shared";
+import { formatContributorList } from "./contributor-format.js";
+import type { ContributorRole } from "./contributor-role.js";
 
 export const OUTPUT_CHANNELS = ["Facebook", "Instagram", "Threads", "Bluesky"] as const;
 export type OutputChannel = (typeof OUTPUT_CHANNELS)[number];

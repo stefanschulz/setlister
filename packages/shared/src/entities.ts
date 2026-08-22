@@ -27,7 +27,7 @@ export interface TrackContributor {
   id: number;
   role: ContributorRole;
   position: number;
-  artist: ArtistSummary;
+  artist: Artist;
 }
 
 export interface Track {
@@ -36,4 +36,22 @@ export interface Track {
   albumId: number;
   album: Album;
   contributors: TrackContributor[];
+}
+
+export interface Episode {
+  id: number;
+  number: number;
+  headline: string;
+  topic: string;
+  airDate: string | null;
+  published: boolean;
+}
+
+export interface EpisodePlaylistEntry {
+  position: number;
+  track: Track;
+}
+
+export interface EpisodeDetail extends Episode {
+  playlist: EpisodePlaylistEntry[];
 }

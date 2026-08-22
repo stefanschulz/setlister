@@ -2,11 +2,14 @@ import { Route, Routes } from 'react-router'
 import { NavLink } from 'react-router'
 import { Toaster } from '@/components/ui/sonner'
 import { cn } from '@/lib/utils'
+import EpisodesPage from '@/pages/EpisodesPage'
+import EpisodePlaylistPage from '@/pages/EpisodePlaylistPage'
 import ArtistsPage from '@/pages/ArtistsPage'
 import AlbumsPage from '@/pages/AlbumsPage'
 import TracksPage from '@/pages/TracksPage'
 
 const navItems = [
+  { to: '/episodes', label: 'Episoden' },
   { to: '/artists', label: 'Künstler' },
   { to: '/albums', label: 'Alben' },
   { to: '/tracks', label: 'Tracks' },
@@ -16,7 +19,7 @@ function App() {
   return (
     <div className="min-h-svh">
       <header className="border-b">
-        <div className="mx-auto flex max-w-4xl items-center gap-6 px-4 py-3">
+        <div className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
           <span className="font-semibold">SetLister</span>
           <nav className="flex gap-4">
             {navItems.map((item) => (
@@ -37,9 +40,11 @@ function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-6">
+      <main className="mx-auto max-w-5xl px-4 py-6">
         <Routes>
-          <Route path="/" element={<ArtistsPage />} />
+          <Route path="/" element={<EpisodesPage />} />
+          <Route path="/episodes" element={<EpisodesPage />} />
+          <Route path="/episodes/:id" element={<EpisodePlaylistPage />} />
           <Route path="/artists" element={<ArtistsPage />} />
           <Route path="/albums" element={<AlbumsPage />} />
           <Route path="/tracks" element={<TracksPage />} />

@@ -13,7 +13,9 @@ import { parseBody, parseIdParam } from "./helpers.js";
 
 const trackWithDetails = {
   album: true,
-  contributors: { with: { artist: true } },
+  // Artist includes socialReferences so the client can compute the M6 live
+  // output preview locally, without a separate round trip per channel.
+  contributors: { with: { artist: { with: { socialReferences: true } } } },
 } as const;
 
 /** Confirms albumId and every contributor's artistId reference an existing row. */

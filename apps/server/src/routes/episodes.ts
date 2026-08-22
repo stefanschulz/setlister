@@ -1,9 +1,13 @@
-import { episodeInputSchema, playlistInputSchema } from "@setlister/shared";
+import {
+  buildAllOutputs,
+  episodeInputSchema,
+  playlistInputSchema,
+  type PlaylistEntryForOutput,
+} from "@setlister/shared";
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Db } from "../db/client.js";
 import { episodePlaylistEntries, episodes, tracks } from "../db/schema.js";
-import { buildAllOutputs, type PlaylistEntryForOutput } from "../services/playlist-output.js";
 import { parseBody, parseIdParam } from "./helpers.js";
 
 function withPublishedFlag<T extends { airDate: string | null }>(episode: T) {
