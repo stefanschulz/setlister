@@ -23,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ApiError } from '@/api/client'
+import { ListStatus } from '@/components/list-status'
 import { emptyToUndefined } from '@/lib/form'
 import { useArtists, useCreateArtist, useDeleteArtist, useUpdateArtist } from '@/queries/artists'
 
@@ -153,7 +154,7 @@ function ArtistDialog({
 }
 
 export default function ArtistsPage() {
-  const { data: artists, isLoading } = useArtists()
+  const { data: artists, isLoading, isError, error } = useArtists()
   const deleteArtist = useDeleteArtist()
   const [dialogArtist, setDialogArtist] = useState<Artist | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -187,9 +188,13 @@ export default function ArtistsPage() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Lade…</p>
-      ) : (
+      <ListStatus
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        isEmpty={(artists?.length ?? 0) === 0}
+        emptyMessage="Noch keine Künstler angelegt."
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -219,7 +224,7 @@ export default function ArtistsPage() {
             ))}
           </TableBody>
         </Table>
-      )}
+      </ListStatus>
 
       <ArtistDialog artist={dialogArtist} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>

@@ -37,6 +37,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ApiError } from '@/api/client'
+import { ListStatus } from '@/components/list-status'
 import { useAlbums } from '@/queries/albums'
 import { useArtists } from '@/queries/artists'
 import { useCreateTrack, useDeleteTrack, useTracks, useUpdateTrack } from '@/queries/tracks'
@@ -237,7 +238,7 @@ function TrackDialog({
 }
 
 export default function TracksPage() {
-  const { data: tracks, isLoading } = useTracks()
+  const { data: tracks, isLoading, isError, error } = useTracks()
   const deleteTrack = useDeleteTrack()
   const [dialogTrack, setDialogTrack] = useState<Track | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -271,9 +272,13 @@ export default function TracksPage() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Lade…</p>
-      ) : (
+      <ListStatus
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        isEmpty={(tracks?.length ?? 0) === 0}
+        emptyMessage="Noch keine Tracks angelegt."
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -305,7 +310,7 @@ export default function TracksPage() {
             ))}
           </TableBody>
         </Table>
-      )}
+      </ListStatus>
 
       <TrackDialog track={dialogTrack} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>

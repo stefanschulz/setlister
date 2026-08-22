@@ -25,6 +25,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ApiError } from '@/api/client'
+import { ListStatus } from '@/components/list-status'
 import { emptyToUndefined } from '@/lib/form'
 import {
   useCreateEpisode,
@@ -127,7 +128,7 @@ function EpisodeDialog({
 }
 
 export default function EpisodesPage() {
-  const { data: episodes, isLoading } = useEpisodes()
+  const { data: episodes, isLoading, isError, error } = useEpisodes()
   const deleteEpisode = useDeleteEpisode()
   const [dialogEpisode, setDialogEpisode] = useState<Episode | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -161,9 +162,13 @@ export default function EpisodesPage() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Lade…</p>
-      ) : (
+      <ListStatus
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        isEmpty={(episodes?.length ?? 0) === 0}
+        emptyMessage="Noch keine Episoden angelegt."
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -202,7 +207,7 @@ export default function EpisodesPage() {
             ))}
           </TableBody>
         </Table>
-      )}
+      </ListStatus>
 
       <EpisodeDialog episode={dialogEpisode} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>

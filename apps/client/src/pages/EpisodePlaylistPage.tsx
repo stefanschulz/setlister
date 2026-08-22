@@ -87,8 +87,8 @@ function SortablePlaylistRow({
 export default function EpisodePlaylistPage() {
   const { id } = useParams<{ id: string }>()
   const episodeId = Number(id)
-  const { data: episode, isLoading } = useEpisode(episodeId)
-  const { data: tracks } = useTracks()
+  const { data: episode, isLoading, isError, error } = useEpisode(episodeId)
+  const { data: tracks, isError: tracksIsError } = useTracks()
   const setPlaylist = useSetPlaylist(episodeId)
 
   const [entries, setEntries] = useState<LocalEntry[]>([])
@@ -155,8 +155,15 @@ export default function EpisodePlaylistPage() {
     }
   }
 
-  if (isLoading || !episode) {
+  if (isLoading) {
     return <p className="text-sm text-muted-foreground">Lade…</p>
+  }
+  if (isError || !episode) {
+    return (
+      <p className="text-sm text-destructive">
+        Fehler beim Laden: {error instanceof Error ? error.message : 'Unbekannter Fehler'}
+      </p>
+    )
   }
 
   return (
@@ -218,6 +225,9 @@ export default function EpisodePlaylistPage() {
             </SortableContext>
           </DndContext>
 
+          {tracksIsError && (
+            <p className="text-xs text-destructive">Tracks konnten nicht geladen werden.</p>
+          )}
           <Select value={pickerValue} onValueChange={(v) => addTrack(Number(v))}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Track hinzufügen…" />

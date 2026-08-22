@@ -23,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ApiError } from '@/api/client'
+import { ListStatus } from '@/components/list-status'
 import { emptyToUndefined } from '@/lib/form'
 import { useAlbums, useCreateAlbum, useDeleteAlbum, useUpdateAlbum } from '@/queries/albums'
 
@@ -100,7 +101,7 @@ function AlbumDialog({
 }
 
 export default function AlbumsPage() {
-  const { data: albums, isLoading } = useAlbums()
+  const { data: albums, isLoading, isError, error } = useAlbums()
   const deleteAlbum = useDeleteAlbum()
   const [dialogAlbum, setDialogAlbum] = useState<Album | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -134,9 +135,13 @@ export default function AlbumsPage() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Lade…</p>
-      ) : (
+      <ListStatus
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        isEmpty={(albums?.length ?? 0) === 0}
+        emptyMessage="Noch keine Alben angelegt."
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -162,7 +167,7 @@ export default function AlbumsPage() {
             ))}
           </TableBody>
         </Table>
-      )}
+      </ListStatus>
 
       <AlbumDialog album={dialogAlbum} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
