@@ -45,14 +45,17 @@ function toFormValues(episode: Episode): EpisodeInput {
   }
 }
 
-function EpisodeDialog({
+export function EpisodeDialog({
   episode,
   open,
   onOpenChange,
+  onCreated,
 }: {
   episode: Episode | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Called with the created/updated episode after a successful submit. */
+  onCreated?: (episode: Episode) => void
 }) {
   const createEpisode = useCreateEpisode()
   const updateEpisode = useUpdateEpisode()
@@ -67,14 +70,16 @@ function EpisodeDialog({
 
   async function onSubmit(values: EpisodeInput) {
     try {
+      let result: Episode
       if (episode) {
-        await updateEpisode.mutateAsync({ id: episode.id, input: values })
+        result = await updateEpisode.mutateAsync({ id: episode.id, input: values })
         toast.success(`Episode ${values.number} aktualisiert`)
       } else {
-        await createEpisode.mutateAsync(values)
+        result = await createEpisode.mutateAsync(values)
         toast.success(`Episode ${values.number} angelegt`)
       }
       onOpenChange(false)
+      onCreated?.(result)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unbekannter Fehler')
     }

@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router'
 import { NavLink } from 'react-router'
 import { Toaster } from '@/components/ui/sonner'
 import { cn } from '@/lib/utils'
+import DashboardPage from '@/pages/DashboardPage'
 import EpisodesPage from '@/pages/EpisodesPage'
 import EpisodePlaylistPage from '@/pages/EpisodePlaylistPage'
 import ArtistsPage from '@/pages/ArtistsPage'
@@ -10,6 +11,7 @@ import TracksPage from '@/pages/TracksPage'
 import OutputChannelsPage from '@/pages/OutputChannelsPage'
 
 const navItems = [
+  { to: '/', label: 'Dashboard' },
   { to: '/episodes', label: 'Episoden' },
   { to: '/artists', label: 'Künstler' },
   { to: '/albums', label: 'Alben' },
@@ -28,6 +30,7 @@ function App() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === '/'}
                 className={({ isActive }) =>
                   cn(
                     'text-sm text-muted-foreground hover:text-foreground',
@@ -44,7 +47,7 @@ function App() {
 
       <main className="mx-auto max-w-5xl px-4 py-6">
         <Routes>
-          <Route path="/" element={<EpisodesPage />} />
+          <Route path="/" element={<DashboardPage />} />
           <Route path="/episodes" element={<EpisodesPage />} />
           <Route path="/episodes/:id" element={<EpisodePlaylistPage />} />
           <Route path="/artists" element={<ArtistsPage />} />

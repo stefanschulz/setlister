@@ -194,10 +194,9 @@ Ursprünglich stand eine Joomla-Erweiterung zur Debatte, da bereits eine Joomla-
 
 ## 4. Offene Punkte für die weitere Bearbeitung
 
-Umgesetzt sind: Datenmodell, API, Admin-Oberfläche (inkl. Playlist-Editor mit Live-Vorschau), Ausgabekanäle als verwaltbare Entität, durchsuchbare Combobox mit Inline-Erstellung für Track/Künstler/Album, sowie Docker-Betrieb mit persistenter Datenhaltung (M0–M11, siehe Git-Historie).
+Umgesetzt sind: Datenmodell, API, Admin-Oberfläche (inkl. Playlist-Editor mit Live-Vorschau, Dashboard als Startseite), Ausgabekanäle als verwaltbare Entität, durchsuchbare Combobox mit Inline-Erstellung für Track/Künstler/Album/Episode (dauerhaft gesetzt, kein Wizard), sowie Docker-Betrieb mit persistenter Datenhaltung (M0–M11, siehe Git-Historie).
 
 Noch offen:
-- **Entscheidung Inline-Erstellung vs. mehrstufiger Wizard** (M11 war ein bewusster Testballon): reicht die aktuelle Lösung dauerhaft, oder wird doch ein echter Schritt-für-Schritt-Wizard gewünscht?
 - v2-Feature "Gesamtübersicht aller Tracks" (§1.9): Fachkonzept (Such-/Filterkriterien, Darstellung) steht noch aus
 - CI-Pipeline (z. B. GitHub Actions für Lint/Test bei jedem Push) – kein Blocker, aber sinnvoller Folgeschritt vor breiterer Nutzung
 - Prüfen, ob weitere Künstler-Rollen (über Original/Feat./Remix hinaus) künftig benötigt werden
