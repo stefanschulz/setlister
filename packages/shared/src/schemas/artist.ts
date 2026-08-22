@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const artistSocialReferenceInputSchema = z.object({
-  platform: z.string().min(1, "platform is required"),
+  channelId: z.number().int().positive(),
   referenceName: z.string().min(1, "referenceName is required"),
 });
 

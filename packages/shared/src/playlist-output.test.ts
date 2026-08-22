@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { OutputChannel } from "./entities.js";
 import {
   buildAllOutputs,
   buildHtmlFragment,
@@ -91,42 +92,49 @@ describe("buildHtmlFragment", () => {
 });
 
 describe("buildTextFragment", () => {
+  const facebook: OutputChannel = { id: 1, name: "Facebook", pattern: "{artists} ({album})" };
+  const bluesky: OutputChannel = { id: 2, name: "Bluesky", pattern: "{artists}" };
+
   const artistWithRefs = {
     name: "Artist A",
     websiteUrl: null,
     socialReferences: [
-      { platform: "Facebook", referenceName: "@a.fb" },
-      { platform: "bluesky", referenceName: "@a.bsky" },
+      { channelId: facebook.id, referenceName: "@a.fb" },
+      { channelId: bluesky.id, referenceName: "@a.bsky" },
     ],
   };
 
-  it("Facebook/Instagram include the album, using the matching channel reference", () => {
+  it("applies the channel's pattern, substituting the matching channel reference", () => {
     const entries = [entry({ contributors: [{ role: "ORIGINAL", position: 0, artist: artistWithRefs }] })];
-    expect(buildTextFragment(entries, "Facebook")).toBe("@a.fb (Album)");
+    expect(buildTextFragment(entries, facebook)).toBe("@a.fb (Album)");
   });
 
-  it("Threads/Bluesky omit the album, and matching is case-insensitive on platform", () => {
+  it("a pattern without {album} omits it", () => {
     const entries = [entry({ contributors: [{ role: "ORIGINAL", position: 0, artist: artistWithRefs }] })];
-    expect(buildTextFragment(entries, "Bluesky")).toBe("@a.bsky");
+    expect(buildTextFragment(entries, bluesky)).toBe("@a.bsky");
   });
 
   it("falls back to the plain artist name when no reference exists for the channel", () => {
+    const otherChannel: OutputChannel = { id: 999, name: "Threads", pattern: "{artists}" };
     const entries = [entry({ contributors: [{ role: "ORIGINAL", position: 0, artist: artistWithRefs }] })];
-    expect(buildTextFragment(entries, "Threads")).toBe("Artist A");
+    expect(buildTextFragment(entries, otherChannel)).toBe("Artist A");
   });
 
   it("joins multiple playlist entries with a comma", () => {
     const entries = [entry({ title: "One" }, 0), entry({ title: "Two" }, 1)];
-    expect(buildTextFragment(entries, "Bluesky")).toBe("Artist A, Artist A");
+    expect(buildTextFragment(entries, bluesky)).toBe("Artist A, Artist A");
   });
 });
 
 describe("buildAllOutputs", () => {
-  it("bundles the HTML fragment and all four channel texts", () => {
-    const result = buildAllOutputs([entry()]);
+  it("bundles the HTML fragment and every given channel's text, keyed by channel id", () => {
+    const facebook: OutputChannel = { id: 1, name: "Facebook", pattern: "{artists} ({album})" };
+    const threads: OutputChannel = { id: 2, name: "Threads", pattern: "{artists}" };
+
+    const result = buildAllOutputs([entry()], [facebook, threads]);
     expect(result.html).toContain("<li>Artist A - Track (Album)</li>");
-    expect(Object.keys(result.text).sort()).toEqual(["Bluesky", "Facebook", "Instagram", "Threads"].sort());
-    expect(result.text.Facebook).toBe("Artist A (Album)");
-    expect(result.text.Threads).toBe("Artist A");
+    expect(Object.keys(result.text).sort()).toEqual([String(facebook.id), String(threads.id)].sort());
+    expect(result.text[facebook.id]).toBe("Artist A (Album)");
+    expect(result.text[threads.id]).toBe("Artist A");
   });
 });

@@ -153,6 +153,8 @@ describe("PUT /api/episodes/:id/playlist", () => {
 describe("GET /api/episodes/:id/output — against the seed data's compilation example", () => {
   it("produces the expected HTML and per-channel text", async () => {
     await seed(db);
+    const channels = await db.query.outputChannels.findMany();
+    const channelIdByName = Object.fromEntries(channels.map((c) => [c.name, c.id]));
 
     const res = await app.request("/api/episodes/1/output");
     expect(res.status).toBe(200);
@@ -170,19 +172,21 @@ describe("GET /api/episodes/:id/output — against the seed data's compilation e
     expect(body.html).toContain(`${linkedA}, Artist B & Artist C - Trio Cut (${linkedComp})`);
 
     // Artist A has a Bluesky reference ("@artist-a") from the seed; the others don't.
-    expect(body.text.Bluesky).toContain("@artist-a");
-    expect(body.text.Bluesky).toContain("Solo Artist");
-    expect(body.text.Facebook).toContain("(Album One)");
-    expect(body.text.Threads).not.toContain("(Album One)");
+    expect(body.text[channelIdByName.Bluesky]).toContain("@artist-a");
+    expect(body.text[channelIdByName.Bluesky]).toContain("Solo Artist");
+    expect(body.text[channelIdByName.Facebook]).toContain("(Album One)");
+    expect(body.text[channelIdByName.Threads]).not.toContain("(Album One)");
   });
 
   it("returns an empty bundle for an episode with no playlist entries", async () => {
     await seed(db);
+    const channels = await db.query.outputChannels.findMany();
+    const facebookId = channels.find((c) => c.name === "Facebook")!.id;
 
     const res = await app.request("/api/episodes/2/output");
     const body = await res.json();
     expect(body.html).toBe("<ul>\n\n</ul>");
-    expect(body.text.Facebook).toBe("");
+    expect(body.text[facebookId]).toBe("");
   });
 });
 

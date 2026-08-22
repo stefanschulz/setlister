@@ -8,3 +8,4 @@ export * from "./schemas/artist.js";
 export * from "./schemas/album.js";
 export * from "./schemas/track.js";
 export * from "./schemas/episode.js";
+export * from "./schemas/output-channel.js";

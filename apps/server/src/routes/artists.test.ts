@@ -2,15 +2,20 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../app.js";
 import { createDb, type Db } from "../db/client.js";
 import { runMigrations } from "../db/migrate.js";
-import { albums, tracks, trackContributors } from "../db/schema.js";
+import { albums, outputChannels, tracks, trackContributors } from "../db/schema.js";
 
 let db: Db;
 let app: ReturnType<typeof createApp>;
+let channelId: number;
 
-beforeEach(() => {
+beforeEach(async () => {
   ({ db } = createDb(":memory:"));
   runMigrations(db);
   app = createApp(db);
+  [{ id: channelId }] = await db
+    .insert(outputChannels)
+    .values({ name: "Bluesky", pattern: "{artists}" })
+    .returning();
 });
 
 async function createArtist(body: Record<string, unknown>) {
@@ -26,15 +31,23 @@ describe("POST /api/artists", () => {
     const res = await createArtist({
       name: "Artist A",
       websiteUrl: "https://a.example",
-      socialReferences: [{ platform: "Bluesky", referenceName: "@a" }],
+      socialReferences: [{ channelId, referenceName: "@a" }],
     });
 
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body).toMatchObject({ name: "Artist A", websiteUrl: "https://a.example" });
     expect(body.socialReferences).toEqual([
-      expect.objectContaining({ platform: "Bluesky", referenceName: "@a" }),
+      expect.objectContaining({ channelId, referenceName: "@a" }),
     ]);
+  });
+
+  it("rejects a non-existent channelId in social references", async () => {
+    const res = await createArtist({
+      name: "Artist A",
+      socialReferences: [{ channelId: 999, referenceName: "@a" }],
+    });
+    expect(res.status).toBe(400);
   });
 
   it("rejects a missing name", async () => {
@@ -83,10 +96,14 @@ describe("GET /api/artists", () => {
 
 describe("PUT /api/artists/:id", () => {
   it("updates fields and replaces social references", async () => {
+    const [instagram] = await db
+      .insert(outputChannels)
+      .values({ name: "Instagram", pattern: "{artists} ({album})" })
+      .returning();
     const created = await (
       await createArtist({
         name: "Artist A",
-        socialReferences: [{ platform: "Bluesky", referenceName: "@old" }],
+        socialReferences: [{ channelId, referenceName: "@old" }],
       })
     ).json();
 
@@ -95,7 +112,7 @@ describe("PUT /api/artists/:id", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: "Artist A Renamed",
-        socialReferences: [{ platform: "Instagram", referenceName: "@new" }],
+        socialReferences: [{ channelId: instagram.id, referenceName: "@new" }],
       }),
     });
 
@@ -103,7 +120,7 @@ describe("PUT /api/artists/:id", () => {
     const body = await res.json();
     expect(body.name).toBe("Artist A Renamed");
     expect(body.socialReferences).toEqual([
-      expect.objectContaining({ platform: "Instagram", referenceName: "@new" }),
+      expect.objectContaining({ channelId: instagram.id, referenceName: "@new" }),
     ]);
   });
 

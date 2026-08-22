@@ -1,9 +1,23 @@
-import { artistInputSchema } from "@setlister/shared";
-import { eq, sql } from "drizzle-orm";
+import { artistInputSchema, type ArtistSocialReferenceInput } from "@setlister/shared";
+import { eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Db } from "../db/client.js";
-import { artistSocialReferences, artists, trackContributors } from "../db/schema.js";
+import { artistSocialReferences, artists, outputChannels, trackContributors } from "../db/schema.js";
 import { parseBody, parseIdParam } from "./helpers.js";
+
+/** Confirms every social reference's channelId points at an existing output channel. */
+async function validateChannelIds(db: Db, socialReferences: ArtistSocialReferenceInput[]): Promise<string | null> {
+  const channelIds = [...new Set(socialReferences.map((s) => s.channelId))];
+  if (channelIds.length === 0) return null;
+
+  const found = await db.query.outputChannels.findMany({ where: inArray(outputChannels.id, channelIds) });
+  if (found.length !== channelIds.length) {
+    const foundIds = new Set(found.map((c) => c.id));
+    const missing = channelIds.filter((id) => !foundIds.has(id));
+    return `Output channel(s) not found: ${missing.join(", ")}`;
+  }
+  return null;
+}
 
 export function createArtistsRouter(db: Db) {
   const router = new Hono();
@@ -30,6 +44,9 @@ export function createArtistsRouter(db: Db) {
     if (!parsed.success) return parsed.response;
 
     const { socialReferences = [], ...artistData } = parsed.data;
+    const channelError = await validateChannelIds(db, socialReferences);
+    if (channelError) return c.json({ error: channelError }, 400);
+
     const [created] = await db.insert(artists).values(artistData).returning();
     if (socialReferences.length > 0) {
       await db
@@ -55,6 +72,9 @@ export function createArtistsRouter(db: Db) {
     if (!parsed.success) return parsed.response;
 
     const { socialReferences = [], ...artistData } = parsed.data;
+    const channelError = await validateChannelIds(db, socialReferences);
+    if (channelError) return c.json({ error: channelError }, 400);
+
     await db.update(artists).set(artistData).where(eq(artists.id, id));
     await db.delete(artistSocialReferences).where(eq(artistSocialReferences.artistId, id));
     if (socialReferences.length > 0) {

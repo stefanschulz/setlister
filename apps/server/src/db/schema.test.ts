@@ -8,6 +8,7 @@ import {
   artistSocialReferences,
   episodePlaylistEntries,
   episodes,
+  outputChannels,
   trackContributors,
   tracks,
 } from "./schema.js";
@@ -31,18 +32,22 @@ describe("insert/query roundtrip per entity", () => {
     expect(found).toMatchObject({ name: "Test Artist", realName: "Jane Doe" });
   });
 
-  it("artist social reference, linked to its artist", async () => {
+  it("artist social reference, linked to its artist and its output channel", async () => {
     const [artist] = await db.insert(artists).values({ name: "Test Artist" }).returning();
+    const [channel] = await db
+      .insert(outputChannels)
+      .values({ name: "Bluesky", pattern: "{artists}" })
+      .returning();
     await db
       .insert(artistSocialReferences)
-      .values({ artistId: artist.id, platform: "Bluesky", referenceName: "@test" });
+      .values({ artistId: artist.id, channelId: channel.id, referenceName: "@test" });
 
     const withRefs = await db.query.artists.findFirst({
       where: eq(artists.id, artist.id),
       with: { socialReferences: true },
     });
     expect(withRefs?.socialReferences).toEqual([
-      expect.objectContaining({ platform: "Bluesky", referenceName: "@test" }),
+      expect.objectContaining({ channelId: channel.id, referenceName: "@test" }),
     ]);
   });
 

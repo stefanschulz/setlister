@@ -1,21 +1,11 @@
 import { formatContributorList } from "./contributor-format.js";
 import type { ContributorRole } from "./contributor-role.js";
-
-export const OUTPUT_CHANNELS = ["Facebook", "Instagram", "Threads", "Bluesky"] as const;
-export type OutputChannel = (typeof OUTPUT_CHANNELS)[number];
-
-// docs/konzept.md §1.7: Facebook/Instagram include the album, Threads/Bluesky don't.
-const CHANNEL_TEMPLATE: Record<OutputChannel, "withAlbum" | "namesOnly"> = {
-  Facebook: "withAlbum",
-  Instagram: "withAlbum",
-  Threads: "namesOnly",
-  Bluesky: "namesOnly",
-};
+import type { OutputChannel } from "./entities.js";
 
 export interface ArtistForOutput {
   name: string;
   websiteUrl: string | null;
-  socialReferences: { platform: string; referenceName: string }[];
+  socialReferences: { channelId: number; referenceName: string }[];
 }
 
 export interface ContributorForOutput {
@@ -37,15 +27,20 @@ export interface PlaylistEntryForOutput {
 
 export interface OutputBundle {
   html: string;
-  text: Record<OutputChannel, string>;
+  /** Keyed by OutputChannel.id, since channel names are user-defined and not fixed. */
+  text: Record<number, string>;
 }
 
-export function buildAllOutputs(entries: PlaylistEntryForOutput[]): OutputBundle {
+export function buildAllOutputs(
+  entries: PlaylistEntryForOutput[],
+  channels: OutputChannel[],
+): OutputBundle {
   const sorted = [...entries].sort((a, b) => a.position - b.position);
 
-  const text = Object.fromEntries(
-    OUTPUT_CHANNELS.map((channel) => [channel, buildTextFragment(sorted, channel)]),
-  ) as Record<OutputChannel, string>;
+  const text: Record<number, string> = {};
+  for (const channel of channels) {
+    text[channel.id] = buildTextFragment(sorted, channel);
+  }
 
   return { html: buildHtmlFragment(sorted), text };
 }
@@ -68,29 +63,45 @@ export function buildHtmlFragment(entries: PlaylistEntryForOutput[]): string {
   return `<ul>\n${items.map((item) => `  ${item}`).join("\n")}\n</ul>`;
 }
 
+/**
+ * Renders a channel's own pattern (placeholders {artists}/{track}/{album})
+ * for each playlist entry and joins them with ", " — the pattern itself now
+ * carries what used to be a hardcoded "with/without album" choice.
+ */
 export function buildTextFragment(entries: PlaylistEntryForOutput[], channel: OutputChannel): string {
   const sorted = [...entries].sort((a, b) => a.position - b.position);
-  const template = CHANNEL_TEMPLATE[channel];
 
   const parts = sorted.map(({ track }) => {
     const contributors = formatContributorList(
       track.contributors.map((c) => ({
-        name: referenceNameForChannel(c.artist, channel),
+        name: referenceNameForChannel(c.artist, channel.id),
         role: c.role,
         position: c.position,
       })),
     );
-    return template === "withAlbum" ? `${contributors} (${track.album.title})` : contributors;
+    return applyPattern(channel.pattern, {
+      artists: contributors,
+      track: track.title,
+      album: track.album.title,
+    });
   });
 
   return parts.join(", ");
 }
 
-function referenceNameForChannel(artist: ArtistForOutput, channel: OutputChannel): string {
-  const match = artist.socialReferences.find(
-    (ref) => ref.platform.trim().toLowerCase() === channel.toLowerCase(),
-  );
+function referenceNameForChannel(artist: ArtistForOutput, channelId: number): string {
+  const match = artist.socialReferences.find((ref) => ref.channelId === channelId);
   return match?.referenceName ?? artist.name;
+}
+
+function applyPattern(
+  pattern: string,
+  values: { artists: string; track: string; album: string },
+): string {
+  return pattern
+    .replaceAll("{artists}", values.artists)
+    .replaceAll("{track}", values.track)
+    .replaceAll("{album}", values.album);
 }
 
 function linkedName(escapedName: string, url: string | null): string {

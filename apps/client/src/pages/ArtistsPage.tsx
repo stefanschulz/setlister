@@ -2,7 +2,7 @@ import { type Artist, type ArtistInput, artistInputSchema } from '@setlister/sha
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PlusIcon, TrashIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +15,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -26,6 +33,7 @@ import { ApiError } from '@/api/client'
 import { ListStatus } from '@/components/list-status'
 import { emptyToUndefined } from '@/lib/form'
 import { useArtists, useCreateArtist, useDeleteArtist, useUpdateArtist } from '@/queries/artists'
+import { useOutputChannels } from '@/queries/output-channels'
 
 const emptyValues: ArtistInput = {
   name: '',
@@ -40,7 +48,7 @@ function toFormValues(artist: Artist): ArtistInput {
     realName: artist.realName ?? undefined,
     websiteUrl: artist.websiteUrl ?? undefined,
     socialReferences: artist.socialReferences.map((s) => ({
-      platform: s.platform,
+      channelId: s.channelId,
       referenceName: s.referenceName,
     })),
   }
@@ -57,6 +65,7 @@ function ArtistDialog({
 }) {
   const createArtist = useCreateArtist()
   const updateArtist = useUpdateArtist()
+  const { data: channels } = useOutputChannels()
   const form = useForm<ArtistInput>({
     resolver: zodResolver(artistInputSchema),
     defaultValues: emptyValues,
@@ -115,16 +124,33 @@ function ArtistDialog({
                 type="button"
                 variant="outline"
                 size="icon-sm"
-                onClick={() => socialReferences.append({ platform: '', referenceName: '' })}
+                onClick={() => socialReferences.append({ channelId: 0, referenceName: '' })}
               >
                 <PlusIcon />
               </Button>
             </div>
             {socialReferences.fields.map((field, index) => (
               <div key={field.id} className="flex gap-2">
-                <Input
-                  placeholder="Plattform (z. B. Bluesky)"
-                  {...form.register(`socialReferences.${index}.platform`)}
+                <Controller
+                  control={form.control}
+                  name={`socialReferences.${index}.channelId`}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ? String(field.value) : undefined}
+                      onValueChange={(v) => field.onChange(Number(v))}
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Kanal" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {channels?.map((channel) => (
+                          <SelectItem key={channel.id} value={String(channel.id)}>
+                            {channel.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
                 <Input
                   placeholder="Referenzname"

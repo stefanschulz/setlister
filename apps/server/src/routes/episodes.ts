@@ -137,7 +137,8 @@ export function createEpisodesRouter(db: Db) {
     if (!existing) return c.json({ error: "Episode not found" }, 404);
 
     const playlist = await loadPlaylist(db, id);
-    return c.json(buildAllOutputs(playlist));
+    const channels = await db.query.outputChannels.findMany();
+    return c.json(buildAllOutputs(playlist, channels));
   });
 
   return router;

@@ -1,8 +1,14 @@
 import type { ContributorRole } from "./contributor-role.js";
 
+export interface OutputChannel {
+  id: number;
+  name: string;
+  pattern: string;
+}
+
 export interface SocialReference {
   id: number;
-  platform: string;
+  channelId: number;
   referenceName: string;
 }
 

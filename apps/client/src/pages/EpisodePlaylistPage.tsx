@@ -1,9 +1,4 @@
-import {
-  buildAllOutputs,
-  formatContributorList,
-  OUTPUT_CHANNELS,
-  type PlaylistEntryForOutput,
-} from '@setlister/shared'
+import { buildAllOutputs, formatContributorList, type PlaylistEntryForOutput } from '@setlister/shared'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import {
@@ -29,6 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ApiError } from '@/api/client'
 import { useEpisode, useSetPlaylist } from '@/queries/episodes'
+import { useOutputChannels } from '@/queries/output-channels'
 import { useTracks } from '@/queries/tracks'
 
 interface LocalEntry {
@@ -89,6 +85,7 @@ export default function EpisodePlaylistPage() {
   const episodeId = Number(id)
   const { data: episode, isLoading, isError, error } = useEpisode(episodeId)
   const { data: tracks, isError: tracksIsError } = useTracks()
+  const { data: channels } = useOutputChannels()
   const setPlaylist = useSetPlaylist(episodeId)
 
   const [entries, setEntries] = useState<LocalEntry[]>([])
@@ -119,7 +116,10 @@ export default function EpisodePlaylistPage() {
     [entries, tracksById],
   )
 
-  const preview = useMemo(() => buildAllOutputs(outputEntries), [outputEntries])
+  const preview = useMemo(
+    () => buildAllOutputs(outputEntries, channels ?? []),
+    [outputEntries, channels],
+  )
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
@@ -247,9 +247,9 @@ export default function EpisodePlaylistPage() {
           <Tabs defaultValue="html">
             <TabsList>
               <TabsTrigger value="html">HTML</TabsTrigger>
-              {OUTPUT_CHANNELS.map((channel) => (
-                <TabsTrigger key={channel} value={channel}>
-                  {channel}
+              {channels?.map((channel) => (
+                <TabsTrigger key={channel.id} value={String(channel.id)}>
+                  {channel.name}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -270,19 +270,19 @@ export default function EpisodePlaylistPage() {
               </Button>
             </TabsContent>
 
-            {OUTPUT_CHANNELS.map((channel) => (
-              <TabsContent key={channel} value={channel} className="flex flex-col gap-2">
+            {channels?.map((channel) => (
+              <TabsContent key={channel.id} value={String(channel.id)} className="flex flex-col gap-2">
                 <p className="rounded-md border p-3 text-sm whitespace-pre-wrap">
-                  {preview.text[channel] || '–'}
+                  {preview.text[channel.id] || '–'}
                 </p>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className="self-start"
-                  onClick={() => copyToClipboard(preview.text[channel], channel)}
+                  onClick={() => copyToClipboard(preview.text[channel.id], channel.name)}
                 >
-                  <CopyIcon /> {channel}-Text kopieren
+                  <CopyIcon /> {channel.name}-Text kopieren
                 </Button>
               </TabsContent>
             ))}

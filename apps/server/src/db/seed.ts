@@ -7,6 +7,7 @@ import {
   artistSocialReferences,
   episodePlaylistEntries,
   episodes,
+  outputChannels,
   trackContributors,
   tracks,
 } from "./schema.js";
@@ -17,6 +18,16 @@ import {
  * have different artists (feat./remix), to exercise the formatting rule.
  */
 export async function seed(db: ReturnType<typeof createDb>["db"]) {
+  const [facebook, instagram, threads, bluesky] = await db
+    .insert(outputChannels)
+    .values([
+      { name: "Facebook", pattern: "{artists} ({album})" },
+      { name: "Instagram", pattern: "{artists} ({album})" },
+      { name: "Threads", pattern: "{artists}" },
+      { name: "Bluesky", pattern: "{artists}" },
+    ])
+    .returning();
+
   const [artistA] = await db
     .insert(artists)
     .values({ name: "Artist A", websiteUrl: "https://artist-a.example" })
@@ -26,8 +37,8 @@ export async function seed(db: ReturnType<typeof createDb>["db"]) {
   const [soloArtist] = await db.insert(artists).values({ name: "Solo Artist" }).returning();
 
   await db.insert(artistSocialReferences).values([
-    { artistId: artistA.id, platform: "Bluesky", referenceName: "@artist-a" },
-    { artistId: artistA.id, platform: "Instagram", referenceName: "artist.a.official" },
+    { artistId: artistA.id, channelId: bluesky.id, referenceName: "@artist-a" },
+    { artistId: artistA.id, channelId: instagram.id, referenceName: "artist.a.official" },
   ]);
 
   const [albumOne] = await db.insert(albums).values({ title: "Album One" }).returning();

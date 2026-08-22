@@ -33,23 +33,31 @@ Jede Episode besitzt genau eine Playlist.
 
 ### 1.2 Playlistverwaltung
 
-Eine Playlist ist eine manuell sortierbare, geordnete Liste von Track-Referenzen – **kein eigener Eintragstyp**. Jeder Listenplatz referenziert direkt einen Stammdaten-Track; Künstler und Album ergeben sich daraus automatisch (siehe 1.5).
+Eine Playlist ist eine manuell sortierbare, geordnete Liste von Track-Referenzen – **kein eigener Eintragstyp**. Jeder Listenplatz referenziert direkt einen Stammdaten-Track; Künstler und Album ergeben sich daraus automatisch (siehe 1.6).
 
 - Reihenfolge = tatsächliche Sendereihenfolge im Podcast
 - Sortierung erfolgt manuell (z. B. per Drag & Drop) durch die Redaktion
 - Ein Track kann in mehreren Episoden vorkommen (Wiederholungen möglich)
 
-### 1.3 Künstlerverwaltung
+### 1.3 Ausgabekanäle
+
+Ein Ausgabekanal ist eine selbst pflegbare Entität, kein Festschema im Code, mit:
+- Name (Pflicht, eindeutig, z. B. "Facebook", "Mastodon")
+- Ausgabe-Muster (Pflicht): ein Text-Template mit Platzhaltern `{artists}`, `{track}`, `{album}` für die Textfragment-Ausgabe (siehe 1.8), z. B. `{artists} ({album})` oder `{artists}`
+
+Das ersetzt ein früher fest im Code hinterlegtes 4-Kanal-Schema (Facebook/Instagram/Threads/Bluesky) durch eine in der Oberfläche verwaltbare Liste – neue Kanäle (z. B. Mastodon) erfordern keine Codeänderung mehr. Das HTML-Fragment (1.7) bleibt davon unabhängig fest formatiert.
+
+### 1.4 Künstlerverwaltung
 
 Eintrag pro Künstler mit:
 - Künstlername (Pflicht)
 - Realname (optional)
 - Website-URL (optional)
-- Referenznamen für Social-Media-Kanäle (aktuell: Facebook, Instagram, Soundcloud, Bandcamp, Threads, Bluesky, Mastodon), optional, Plattformliste muss erweiterbar sein (kein Festschema)
+- Referenznamen je Ausgabekanal (optional), als Auswahl aus der in 1.3 gepflegten Kanalliste (nicht als Freitext)
 
 Hat ein Künstler für einen Ausgabekanal keinen Referenznamen hinterlegt, wird dort ersatzweise der Künstlername verwendet.
 
-### 1.4 Albumverwaltung
+### 1.5 Albumverwaltung
 
 Eintrag je Album mit:
 - Albumtitel (Pflicht)
@@ -57,7 +65,7 @@ Eintrag je Album mit:
 
 Alben besitzen **keine eigene Künstlerzuordnung** und keine weiteren Metadaten. Welche Tracks zu einem Album gehören, ergibt sich ausschließlich über die Track→Album-Referenz; ein Sonderfall "Diverse/Various" (z. B. für Sampler) ist dadurch nicht erforderlich.
 
-### 1.5 Trackverwaltung
+### 1.6 Trackverwaltung
 
 Eintrag je Track mit:
 - Tracktitel (Pflicht)
@@ -67,9 +75,9 @@ Eintrag je Track mit:
   - **Feat.** – als Feature beitragender Künstler
   - **Remix** – Künstler einer Remix-/Variantenversion
 
-Die Rollen bestimmen die Ausgabeformatierung des/der Künstler (siehe 1.7).
+Die Rollen bestimmen die Ausgabeformatierung des/der Künstler (siehe 1.8).
 
-### 1.6 Dynamische Ausgabe von HTML-Fragmenten
+### 1.7 Dynamische Ausgabe von HTML-Fragmenten
 
 Für eine Episoden-Playlist kann ein HTML-Fragment erzeugt werden, bestehend aus einer Liste je Track:
 
@@ -81,14 +89,14 @@ Für eine Episoden-Playlist kann ein HTML-Fragment erzeugt werden, bestehend aus
 - Der Albumtitel ist mit dem Albumlink verlinkt (falls vorhanden)
 - Ausgabe als kopierbares HTML-Snippet (kein automatisches Publizieren in ein CMS)
 
-### 1.7 Dynamische Ausgabe von Textfragmenten (Social Media)
+### 1.8 Dynamische Ausgabe von Textfragmenten (Ausgabekanäle)
 
-Für eine Playlist können kanalspezifische Textfragmente erzeugt werden:
+Für eine Playlist wird je in 1.3 gepflegtem Ausgabekanal ein Textfragment erzeugt: Das Kanal-Muster wird pro Track-Eintrag mit `{artists}`/`{track}`/`{album}` gefüllt, die Einträge werden mit `, ` verbunden. Die mitgelieferten Standardkanäle bilden die ursprünglich fest vorgesehenen Formate ab:
 
-- Facebook / Instagram: `<Künstler°> (<Album>), <Künstler°> (<Album>), ...`
-- Threads / Bluesky: `<Künstler°>, <Künstler°>, ...`
+- Facebook / Instagram (Muster `{artists} ({album})`): `<Künstler°> (<Album>), <Künstler°> (<Album>), ...`
+- Threads / Bluesky (Muster `{artists}`): `<Künstler°>, <Künstler°>, ...`
 
-Künstlernamen werden dabei durch den kanalspezifischen Social-Media-Referenznamen ersetzt (Fallback: Künstlername, siehe 1.3).
+Künstlernamen werden dabei durch den kanalspezifischen Referenznamen ersetzt (Fallback: Künstlername, siehe 1.4).
 
 #### Formatierungsregel für `<Künstler°>`
 
@@ -107,7 +115,7 @@ Künstler werden nach Rolle gruppiert und wie folgt zusammengesetzt:
 
 Jeder Einzelname bleibt dabei individuell verlinkt (HTML) bzw. individuell durch seinen Referenznamen ersetzt (Text). Die gleichzeitige Kombination aus Feature *und* Remix auf demselben Track ist im Modell abgedeckt, aber aktuell kein praktisch benötigter Fall.
 
-### 1.8 Zukünftige Erweiterung (v2, nicht Teil des ersten Release)
+### 1.9 Zukünftige Erweiterung (v2, nicht Teil des ersten Release)
 
 Zusätzlich zur Pflege einzelner Episoden soll eine **Gesamtübersicht** über alle jemals gespielten Tracks verfügbar sein, sortier- und filterbar (u. a. nach Folgennummer, Künstler). Das Datenmodell muss dies unterstützen, ist aber für v1 nicht umzusetzen.
 
@@ -120,7 +128,8 @@ Zusätzlich zur Pflege einzelner Episoden soll eine **Gesamtübersicht** über a
 | Entität | Attribute |
 |---|---|
 | **Artist** | id, name (Pflicht), realName (optional), websiteUrl (optional) |
-| **ArtistSocialReference** | id, artistId (FK), platform (erweiterbar, z. B. Enum/String), referenceName |
+| **OutputChannel** | id, name (Pflicht, eindeutig), pattern (Pflicht, Platzhalter `{artists}`/`{track}`/`{album}`) |
+| **ArtistSocialReference** | id, artistId (FK), channelId (FK auf OutputChannel), referenceName |
 | **Album** | id, title (Pflicht), link (optional) |
 | **Track** | id, title (Pflicht), albumId (FK, Pflicht) |
 | **TrackContributor** | trackId (FK), artistId (FK), role (`ORIGINAL` \| `FEATURING` \| `REMIX`), position (Sortierung innerhalb der Rolle) |
@@ -132,6 +141,7 @@ Zusätzlich zur Pflege einzelner Episoden soll eine **Gesamtübersicht** über a
 ```mermaid
 erDiagram
     ARTIST ||--o{ ARTIST_SOCIAL_REFERENCE : hat
+    OUTPUT_CHANNEL ||--o{ ARTIST_SOCIAL_REFERENCE : referenziert
     ARTIST ||--o{ TRACK_CONTRIBUTOR : traegt_bei
     TRACK ||--o{ TRACK_CONTRIBUTOR : hat_beitraege
     ALBUM ||--o{ TRACK : enthaelt
@@ -140,6 +150,7 @@ erDiagram
 ```
 
 - Artist 1:n ArtistSocialReference
+- OutputChannel 1:n ArtistSocialReference (jede Referenz gehört zu genau einem gepflegten Ausgabekanal)
 - Artist n:m Track (über TrackContributor, inkl. Rolle + Position)
 - Album 1:n Track
 - Episode n:m Track (über EpisodePlaylistEntry, inkl. Position = Sendereihenfolge)
@@ -152,6 +163,7 @@ erDiagram
 - **Kein "Diverse/Various"-Konstrukt:** entfällt, da Alben keine eigene Künstlerzuordnung tragen und jeder Track immer konkrete Künstler referenziert.
 - **Playlist-Eintrag = reine Track-Referenz:** da Künstler und Album vollständig aus dem referenzierten Track ableitbar sind, braucht ein Playlisteintrag keine eigenen Fachattribute außer der Position.
 - **Veröffentlichungsstatus der Episode ist abgeleitet** (aus `airDate`), kein eigenes Statusfeld.
+- **Ausgabekanäle sind Daten, kein Code:** `OutputChannel` (Name + Ausgabe-Muster) ersetzt ein anfänglich fest im Code hinterlegtes Kanal-Array; Künstler-Social-Referenzen zeigen per Fremdschlüssel auf einen gepflegten Kanal statt auf einen freien Text.
 
 ---
 

@@ -7,12 +7,14 @@ import EpisodePlaylistPage from '@/pages/EpisodePlaylistPage'
 import ArtistsPage from '@/pages/ArtistsPage'
 import AlbumsPage from '@/pages/AlbumsPage'
 import TracksPage from '@/pages/TracksPage'
+import OutputChannelsPage from '@/pages/OutputChannelsPage'
 
 const navItems = [
   { to: '/episodes', label: 'Episoden' },
   { to: '/artists', label: 'Künstler' },
   { to: '/albums', label: 'Alben' },
   { to: '/tracks', label: 'Tracks' },
+  { to: '/output-channels', label: 'Ausgabekanäle' },
 ]
 
 function App() {
@@ -48,6 +50,7 @@ function App() {
           <Route path="/artists" element={<ArtistsPage />} />
           <Route path="/albums" element={<AlbumsPage />} />
           <Route path="/tracks" element={<TracksPage />} />
+          <Route path="/output-channels" element={<OutputChannelsPage />} />
         </Routes>
       </main>
 
