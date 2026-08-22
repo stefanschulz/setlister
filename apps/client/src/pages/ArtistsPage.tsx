@@ -54,14 +54,17 @@ function toFormValues(artist: Artist): ArtistInput {
   }
 }
 
-function ArtistDialog({
+export function ArtistDialog({
   artist,
   open,
   onOpenChange,
+  onCreated,
 }: {
   artist: Artist | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Called with the created/updated artist after a successful submit. */
+  onCreated?: (artist: Artist) => void
 }) {
   const createArtist = useCreateArtist()
   const updateArtist = useUpdateArtist()
@@ -78,14 +81,16 @@ function ArtistDialog({
 
   async function onSubmit(values: ArtistInput) {
     try {
+      let result: Artist
       if (artist) {
-        await updateArtist.mutateAsync({ id: artist.id, input: values })
+        result = await updateArtist.mutateAsync({ id: artist.id, input: values })
         toast.success(`${values.name} aktualisiert`)
       } else {
-        await createArtist.mutateAsync(values)
+        result = await createArtist.mutateAsync(values)
         toast.success(`${values.name} angelegt`)
       }
       onOpenChange(false)
+      onCreated?.(result)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unbekannter Fehler')
     }

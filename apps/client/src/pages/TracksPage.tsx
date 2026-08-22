@@ -37,10 +37,12 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ApiError } from '@/api/client'
+import { EntityCombobox } from '@/components/entity-combobox'
 import { ListStatus } from '@/components/list-status'
 import { useAlbums } from '@/queries/albums'
 import { useArtists } from '@/queries/artists'
 import { useCreateTrack, useDeleteTrack, useTracks, useUpdateTrack } from '@/queries/tracks'
+import { ArtistDialog } from './ArtistsPage'
 
 const ROLE_LABELS: Record<ContributorRole, string> = {
   ORIGINAL: 'Original',
@@ -73,14 +75,17 @@ function withPositions(contributors: TrackFormValues['contributors']): TrackInpu
   return contributors.map((c) => ({ ...c, position: counters[c.role]++ }))
 }
 
-function TrackDialog({
+export function TrackDialog({
   track,
   open,
   onOpenChange,
+  onCreated,
 }: {
   track: Track | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Called with the created/updated track after a successful submit. */
+  onCreated?: (track: Track) => void
 }) {
   const { data: albums } = useAlbums()
   const { data: artists } = useArtists()
@@ -92,6 +97,8 @@ function TrackDialog({
   })
   const contributors = useFieldArray({ control: form.control, name: 'contributors' })
 
+  const [newArtistIndex, setNewArtistIndex] = useState<number | null>(null)
+
   useEffect(() => {
     if (open) form.reset(track ? toFormValues(track) : emptyValues)
   }, [open, track, form])
@@ -99,20 +106,23 @@ function TrackDialog({
   async function onSubmit(values: TrackFormValues) {
     const input: TrackInput = { ...values, contributors: withPositions(values.contributors) }
     try {
+      let result: Track
       if (track) {
-        await updateTrack.mutateAsync({ id: track.id, input })
+        result = await updateTrack.mutateAsync({ id: track.id, input })
         toast.success(`${input.title} aktualisiert`)
       } else {
-        await createTrack.mutateAsync(input)
+        result = await createTrack.mutateAsync(input)
         toast.success(`${input.title} angelegt`)
       }
       onOpenChange(false)
+      onCreated?.(result)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unbekannter Fehler')
     }
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
@@ -173,21 +183,14 @@ function TrackDialog({
                   control={form.control}
                   name={`contributors.${index}.artistId`}
                   render={({ field }) => (
-                    <Select
-                      value={field.value ? String(field.value) : undefined}
-                      onValueChange={(v) => field.onChange(Number(v))}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Künstler" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {artists?.map((artist) => (
-                          <SelectItem key={artist.id} value={String(artist.id)}>
-                            {artist.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <EntityCombobox
+                      items={(artists ?? []).map((artist) => ({ id: artist.id, label: artist.name }))}
+                      value={field.value || undefined}
+                      onChange={field.onChange}
+                      placeholder="Künstler"
+                      onCreateNew={() => setNewArtistIndex(index)}
+                      createNewLabel="Neuen Künstler anlegen…"
+                    />
                   )}
                 />
                 <Controller
@@ -234,6 +237,21 @@ function TrackDialog({
         </form>
       </DialogContent>
     </Dialog>
+
+    <ArtistDialog
+      artist={null}
+      open={newArtistIndex !== null}
+      onOpenChange={(o) => {
+        if (!o) setNewArtistIndex(null)
+      }}
+      onCreated={(newArtist) => {
+        if (newArtistIndex !== null) {
+          form.setValue(`contributors.${newArtistIndex}.artistId`, newArtist.id)
+        }
+        setNewArtistIndex(null)
+      }}
+    />
+    </>
   )
 }
 

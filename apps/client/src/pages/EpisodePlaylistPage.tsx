@@ -14,18 +14,13 @@ import { Link, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ApiError } from '@/api/client'
+import { EntityCombobox } from '@/components/entity-combobox'
 import { useEpisode, useSetPlaylist } from '@/queries/episodes'
 import { useOutputChannels } from '@/queries/output-channels'
 import { useTracks } from '@/queries/tracks'
+import { TrackDialog } from './TracksPage'
 
 interface LocalEntry {
   localId: string
@@ -90,7 +85,7 @@ export default function EpisodePlaylistPage() {
 
   const [entries, setEntries] = useState<LocalEntry[]>([])
   const [dirty, setDirty] = useState(false)
-  const [pickerValue, setPickerValue] = useState('')
+  const [newTrackDialogOpen, setNewTrackDialogOpen] = useState(false)
 
   useEffect(() => {
     if (episode) {
@@ -137,7 +132,6 @@ export default function EpisodePlaylistPage() {
   function addTrack(trackId: number) {
     setEntries((items) => [...items, { localId: crypto.randomUUID(), trackId }])
     setDirty(true)
-    setPickerValue('')
   }
 
   function removeEntry(localId: string) {
@@ -228,18 +222,19 @@ export default function EpisodePlaylistPage() {
           {tracksIsError && (
             <p className="text-xs text-destructive">Tracks konnten nicht geladen werden.</p>
           )}
-          <Select value={pickerValue} onValueChange={(v) => addTrack(Number(v))}>
-            <SelectTrigger className="w-full max-w-md">
-              <SelectValue placeholder="Track hinzufügen…" />
-            </SelectTrigger>
-            <SelectContent>
-              {tracks?.map((track) => (
-                <SelectItem key={track.id} value={String(track.id)}>
-                  {track.title} ({track.album.title})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="max-w-md">
+            <EntityCombobox
+              items={(tracks ?? []).map((track) => ({
+                id: track.id,
+                label: `${track.title} (${track.album.title})`,
+              }))}
+              value={undefined}
+              onChange={addTrack}
+              placeholder="Track hinzufügen…"
+              onCreateNew={() => setNewTrackDialogOpen(true)}
+              createNewLabel="Neuen Track anlegen…"
+            />
+          </div>
         </div>
 
         <div className="flex flex-col gap-3 md:sticky md:top-6 md:self-start">
@@ -289,6 +284,13 @@ export default function EpisodePlaylistPage() {
           </Tabs>
         </div>
       </div>
+
+      <TrackDialog
+        track={null}
+        open={newTrackDialogOpen}
+        onOpenChange={setNewTrackDialogOpen}
+        onCreated={(newTrack) => addTrack(newTrack.id)}
+      />
     </div>
   )
 }
