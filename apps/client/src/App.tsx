@@ -7,6 +7,7 @@ import {
   UsersIcon,
 } from 'lucide-react'
 import { Link, Route, Routes, useLocation } from 'react-router'
+import { Logo } from '@/components/Logo'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
@@ -47,9 +48,12 @@ function App() {
       <SidebarProvider>
         <Sidebar collapsible="icon">
           <SidebarHeader>
-            <span className="px-2 py-1 text-sm font-semibold group-data-[collapsible=icon]:hidden">
-              SetLister
-            </span>
+            <div className="flex items-center gap-2 px-2 py-1">
+              <Logo className="size-6 shrink-0 text-sidebar-foreground" />
+              <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">
+                SetLister
+              </span>
+            </div>
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
