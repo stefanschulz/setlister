@@ -2,6 +2,9 @@
 FROM node:24-alpine AS build
 WORKDIR /app
 
+# better-sqlite3 compiles a native addon on install (node-gyp).
+RUN apk add --no-cache python3 make g++
+
 COPY package.json package-lock.json ./
 COPY apps/server/package.json apps/server/package.json
 COPY apps/client/package.json apps/client/package.json
@@ -25,6 +28,7 @@ COPY --from=build /app/packages/shared/package.json ./packages/shared/package.js
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY --from=build /app/apps/server/package.json ./apps/server/package.json
 COPY --from=build /app/apps/server/dist ./apps/server/dist
+COPY --from=build /app/apps/server/drizzle ./apps/server/drizzle
 COPY --from=build /app/apps/client/dist ./apps/client/dist
 
 EXPOSE 3000
