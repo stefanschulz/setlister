@@ -183,109 +183,111 @@ export default function EpisodePlaylistPage() {
         <p className="text-sm text-muted-foreground">{episode.topic}</p>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-medium">Playlist</h2>
-          <Button size="sm" onClick={handleSave} disabled={!dirty || setPlaylist.isPending}>
-            Speichern
-          </Button>
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-medium">Playlist</h2>
+            <Button size="sm" onClick={handleSave} disabled={!dirty || setPlaylist.isPending}>
+              Speichern
+            </Button>
+          </div>
+
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext
+              items={entries.map((e) => e.localId)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="flex flex-col gap-2">
+                {entries.map((entry) => {
+                  const track = tracksById.get(entry.trackId)
+                  if (!track) return null
+                  const contributors = formatContributorList(
+                    track.contributors.map((c) => ({
+                      name: c.artist.name,
+                      role: c.role,
+                      position: c.position,
+                    })),
+                  )
+                  return (
+                    <SortablePlaylistRow
+                      key={entry.localId}
+                      entry={entry}
+                      title={`${contributors} - ${track.title}`}
+                      subtitle={`(${track.album.title})`}
+                      onRemove={() => removeEntry(entry.localId)}
+                    />
+                  )
+                })}
+                {entries.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Noch keine Tracks in der Playlist.</p>
+                )}
+              </div>
+            </SortableContext>
+          </DndContext>
+
+          {tracksIsError && (
+            <p className="text-xs text-destructive">Tracks konnten nicht geladen werden.</p>
+          )}
+          <Select value={pickerValue} onValueChange={(v) => addTrack(Number(v))}>
+            <SelectTrigger className="w-full max-w-md">
+              <SelectValue placeholder="Track hinzufügen…" />
+            </SelectTrigger>
+            <SelectContent>
+              {tracks?.map((track) => (
+                <SelectItem key={track.id} value={String(track.id)}>
+                  {track.title} ({track.album.title})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext
-            items={entries.map((e) => e.localId)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="flex flex-col gap-2">
-              {entries.map((entry) => {
-                const track = tracksById.get(entry.trackId)
-                if (!track) return null
-                const contributors = formatContributorList(
-                  track.contributors.map((c) => ({
-                    name: c.artist.name,
-                    role: c.role,
-                    position: c.position,
-                  })),
-                )
-                return (
-                  <SortablePlaylistRow
-                    key={entry.localId}
-                    entry={entry}
-                    title={`${contributors} - ${track.title}`}
-                    subtitle={`(${track.album.title})`}
-                    onRemove={() => removeEntry(entry.localId)}
-                  />
-                )
-              })}
-              {entries.length === 0 && (
-                <p className="text-sm text-muted-foreground">Noch keine Tracks in der Playlist.</p>
-              )}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <div className="flex flex-col gap-3 md:sticky md:top-6 md:self-start">
+          <h2 className="font-medium">Vorschau</h2>
+          <Tabs defaultValue="html">
+            <TabsList>
+              <TabsTrigger value="html">HTML</TabsTrigger>
+              {OUTPUT_CHANNELS.map((channel) => (
+                <TabsTrigger key={channel} value={channel}>
+                  {channel}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-        {tracksIsError && (
-          <p className="text-xs text-destructive">Tracks konnten nicht geladen werden.</p>
-        )}
-        <Select value={pickerValue} onValueChange={(v) => addTrack(Number(v))}>
-          <SelectTrigger className="w-full max-w-md">
-            <SelectValue placeholder="Track hinzufügen…" />
-          </SelectTrigger>
-          <SelectContent>
-            {tracks?.map((track) => (
-              <SelectItem key={track.id} value={String(track.id)}>
-                {track.title} ({track.album.title})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <h2 className="font-medium">Vorschau</h2>
-        <Tabs defaultValue="html">
-          <TabsList>
-            <TabsTrigger value="html">HTML</TabsTrigger>
-            {OUTPUT_CHANNELS.map((channel) => (
-              <TabsTrigger key={channel} value={channel}>
-                {channel}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <TabsContent value="html" className="flex flex-col gap-2">
-            <div
-              className="rounded-md border p-3 text-sm"
-              dangerouslySetInnerHTML={{ __html: preview.html }}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="self-start"
-              onClick={() => copyToClipboard(preview.html, 'HTML')}
-            >
-              <CopyIcon /> HTML kopieren
-            </Button>
-          </TabsContent>
-
-          {OUTPUT_CHANNELS.map((channel) => (
-            <TabsContent key={channel} value={channel} className="flex flex-col gap-2">
-              <p className="rounded-md border p-3 text-sm whitespace-pre-wrap">
-                {preview.text[channel] || '–'}
-              </p>
+            <TabsContent value="html" className="flex flex-col gap-2">
+              <div
+                className="rounded-md border p-3 text-sm"
+                dangerouslySetInnerHTML={{ __html: preview.html }}
+              />
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 className="self-start"
-                onClick={() => copyToClipboard(preview.text[channel], channel)}
+                onClick={() => copyToClipboard(preview.html, 'HTML')}
               >
-                <CopyIcon /> {channel}-Text kopieren
+                <CopyIcon /> HTML kopieren
               </Button>
             </TabsContent>
-          ))}
-        </Tabs>
+
+            {OUTPUT_CHANNELS.map((channel) => (
+              <TabsContent key={channel} value={channel} className="flex flex-col gap-2">
+                <p className="rounded-md border p-3 text-sm whitespace-pre-wrap">
+                  {preview.text[channel] || '–'}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => copyToClipboard(preview.text[channel], channel)}
+                >
+                  <CopyIcon /> {channel}-Text kopieren
+                </Button>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
       </div>
     </div>
   )
