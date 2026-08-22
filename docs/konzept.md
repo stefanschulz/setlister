@@ -167,12 +167,12 @@ erDiagram
 
 | Bereich | Wahl |
 |---|---|
-| Frontend | React + TypeScript, Vite als Build-Tool |
-| Styling | Tailwind CSS |
-| Frontend-Zusatzbibliotheken | `dnd-kit` (manuelles Sortieren der Playlist), TanStack Query (Datenfetching/Caching) |
+| Frontend | React + TypeScript, Vite als Build-Tool, React Router |
+| Styling/UI-Komponenten | Tailwind CSS, shadcn/ui (Radix-Primitives, Code lebt im Repo statt als Laufzeit-Abhängigkeit) |
+| Frontend-Zusatzbibliotheken | `dnd-kit` (manuelles Sortieren der Playlist), TanStack Query (Datenfetching/Caching), React Hook Form + Zod (Formulare, teilt sich die Validierungsschemas mit dem Backend) |
 | Backend | Node.js mit Hono (TypeScript) |
-| Datenhaltung | SQLite (z. B. via `better-sqlite3` oder Drizzle ORM), kein separater DB-Server |
-| Deployment | Ein Docker-Compose-Service, TypeScript durchgängig über Front- und Backend (geteilte Typen) |
+| Datenhaltung | SQLite via Drizzle ORM (`better-sqlite3`), kein separater DB-Server |
+| Deployment | Ein Docker-Compose-Service, TypeScript durchgängig über Front- und Backend (geteilte Typen/Schemas in `packages/shared`) |
 
 ### 3.3 Begründung der Architekturentscheidung
 

@@ -29,7 +29,7 @@ export function createArtistsRouter(db: Db) {
     const parsed = await parseBody(c, artistInputSchema);
     if (!parsed.success) return parsed.response;
 
-    const { socialReferences, ...artistData } = parsed.data;
+    const { socialReferences = [], ...artistData } = parsed.data;
     const [created] = await db.insert(artists).values(artistData).returning();
     if (socialReferences.length > 0) {
       await db
@@ -54,7 +54,7 @@ export function createArtistsRouter(db: Db) {
     const parsed = await parseBody(c, artistInputSchema);
     if (!parsed.success) return parsed.response;
 
-    const { socialReferences, ...artistData } = parsed.data;
+    const { socialReferences = [], ...artistData } = parsed.data;
     await db.update(artists).set(artistData).where(eq(artists.id, id));
     await db.delete(artistSocialReferences).where(eq(artistSocialReferences.artistId, id));
     if (socialReferences.length > 0) {

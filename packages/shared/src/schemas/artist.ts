@@ -9,7 +9,7 @@ export const artistInputSchema = z.object({
   name: z.string().min(1, "name is required"),
   realName: z.string().min(1).optional(),
   websiteUrl: z.string().url().optional(),
-  socialReferences: z.array(artistSocialReferenceInputSchema).default([]),
+  socialReferences: z.array(artistSocialReferenceInputSchema).optional(),
 });
 
 export type ArtistSocialReferenceInput = z.infer<typeof artistSocialReferenceInputSchema>;
