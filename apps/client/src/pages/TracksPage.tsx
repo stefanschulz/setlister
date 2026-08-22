@@ -42,6 +42,7 @@ import { ListStatus } from '@/components/list-status'
 import { useAlbums } from '@/queries/albums'
 import { useArtists } from '@/queries/artists'
 import { useCreateTrack, useDeleteTrack, useTracks, useUpdateTrack } from '@/queries/tracks'
+import { AlbumDialog } from './AlbumsPage'
 import { ArtistDialog } from './ArtistsPage'
 
 const ROLE_LABELS: Record<ContributorRole, string> = {
@@ -98,6 +99,7 @@ export function TrackDialog({
   const contributors = useFieldArray({ control: form.control, name: 'contributors' })
 
   const [newArtistIndex, setNewArtistIndex] = useState<number | null>(null)
+  const [newAlbumDialogOpen, setNewAlbumDialogOpen] = useState(false)
 
   useEffect(() => {
     if (open) form.reset(track ? toFormValues(track) : emptyValues)
@@ -143,21 +145,14 @@ export function TrackDialog({
               control={form.control}
               name="albumId"
               render={({ field }) => (
-                <Select
-                  value={field.value ? String(field.value) : undefined}
-                  onValueChange={(v) => field.onChange(Number(v))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Album wählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {albums?.map((album) => (
-                      <SelectItem key={album.id} value={String(album.id)}>
-                        {album.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <EntityCombobox
+                  items={(albums ?? []).map((album) => ({ id: album.id, label: album.title }))}
+                  value={field.value || undefined}
+                  onChange={field.onChange}
+                  placeholder="Album wählen"
+                  onCreateNew={() => setNewAlbumDialogOpen(true)}
+                  createNewLabel="Neues Album anlegen…"
+                />
               )}
             />
             {form.formState.errors.albumId && (
@@ -237,6 +232,13 @@ export function TrackDialog({
         </form>
       </DialogContent>
     </Dialog>
+
+    <AlbumDialog
+      album={null}
+      open={newAlbumDialogOpen}
+      onOpenChange={setNewAlbumDialogOpen}
+      onCreated={(newAlbum) => form.setValue('albumId', newAlbum.id)}
+    />
 
     <ArtistDialog
       artist={null}

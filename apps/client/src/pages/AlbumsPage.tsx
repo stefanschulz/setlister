@@ -33,14 +33,17 @@ function toFormValues(album: Album): AlbumInput {
   return { title: album.title, link: album.link ?? undefined }
 }
 
-function AlbumDialog({
+export function AlbumDialog({
   album,
   open,
   onOpenChange,
+  onCreated,
 }: {
   album: Album | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Called with the created/updated album after a successful submit. */
+  onCreated?: (album: Album) => void
 }) {
   const createAlbum = useCreateAlbum()
   const updateAlbum = useUpdateAlbum()
@@ -55,14 +58,16 @@ function AlbumDialog({
 
   async function onSubmit(values: AlbumInput) {
     try {
+      let result: Album
       if (album) {
-        await updateAlbum.mutateAsync({ id: album.id, input: values })
+        result = await updateAlbum.mutateAsync({ id: album.id, input: values })
         toast.success(`${values.title} aktualisiert`)
       } else {
-        await createAlbum.mutateAsync(values)
+        result = await createAlbum.mutateAsync(values)
         toast.success(`${values.title} angelegt`)
       }
       onOpenChange(false)
+      onCreated?.(result)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unbekannter Fehler')
     }
