@@ -1,14 +1,42 @@
 export function Logo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 240 240" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="45" y="51" width="135" height="96" rx="18" fill="var(--sidebar)" stroke="currentColor" strokeWidth="3.5" />
-      <rect x="57" y="72" width="135" height="96" rx="18" fill="var(--sidebar)" stroke="currentColor" strokeWidth="3.5" />
-      <rect x="69" y="93" width="135" height="96" rx="18" fill="var(--sidebar)" stroke="currentColor" strokeWidth="4.5" />
-      <rect x="87" y="117" width="90" height="9" rx="4.5" fill="currentColor" />
-      <rect x="87" y="141" width="75" height="9" rx="4.5" fill="currentColor" />
-      <rect x="87" y="165" width="60" height="9" rx="4.5" fill="currentColor" />
-      <circle cx="185" cy="170" r="26" fill="currentColor" />
-      <path d="M175 153 L175 187 L205 170 Z" fill="var(--sidebar)" />
+    <svg viewBox="0 0 240 240" className={className} xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M236,46l0,148c0,23.18 -18.82,42 -42,42l-148,0c-23.18,0 -42,-18.82 -42,-42l0,-148c0,-23.18 18.82,-42 42,-42l148,0c23.18,0 42,18.82 42,42Z"
+        fill="#f6e6d5"
+        stroke="#912b3b"
+        strokeWidth="8"
+      />
+      <path
+        d="M186,79l0,83c0,9.934 -8.066,18 -18,18l-99,0c-9.934,0 -18,-8.066 -18,-18l0,-83c0,-9.934 8.066,-18 18,-18l99,0c9.934,0 18,8.066 18,18Z"
+        fill="#ffffff"
+        stroke="#1f271b"
+        strokeWidth="8"
+        strokeLinejoin="miter"
+        strokeMiterlimit="4"
+      />
+      <path
+        d="M159,111.5c0,2.484 -2.016,4.5 -4.5,4.5l-81,0c-2.484,0 -4.5,-2.016 -4.5,-4.5c0,-2.484 2.016,-4.5 4.5,-4.5l81,0c2.484,0 4.5,2.016 4.5,4.5Z"
+        fill="#1f271b"
+      />
+      <path
+        d="M159,87.5c0,2.484 -2.016,4.5 -4.5,4.5l-81,0c-2.484,0 -4.5,-2.016 -4.5,-4.5c0,-2.484 2.016,-4.5 4.5,-4.5l81,0c2.484,0 4.5,2.016 4.5,4.5Z"
+        fill="#1f271b"
+      />
+      <path
+        d="M144,135.5c0,2.484 -2.016,4.5 -4.5,4.5l-66,0c-2.484,0 -4.5,-2.016 -4.5,-4.5c0,-2.484 2.016,-4.5 4.5,-4.5l66,0c2.484,0 4.5,2.016 4.5,4.5Z"
+        fill="#1f271b"
+      />
+      <path
+        d="M131,159.5c0,2.484 -2.016,4.5 -4.5,4.5l-38,0c-2.484,0 -4.5,-2.016 -4.5,-4.5c0,-2.484 2.016,-4.5 4.5,-4.5l38,0c2.484,0 4.5,2.016 4.5,4.5Z"
+        fill="#1f271b"
+      />
+      <path
+        d="M78.5,159.5c0,2.484 -2.016,4.5 -4.5,4.5l-0.5,0c-2.484,0 -4.5,-2.016 -4.5,-4.5c0,-2.484 2.016,-4.5 4.5,-4.5l0.5,0c2.484,0 4.5,2.016 4.5,4.5Z"
+        fill="#1f271b"
+      />
+      <circle cx="173" cy="167" r="26" fill="#912b3b" />
+      <path d="M163,150l0,34l30,-17l-30,-17Z" fill="#ffffff" />
     </svg>
   )
 }

@@ -9,7 +9,7 @@ import {
 import { Link, Route, Routes, useLocation } from 'react-router'
 import { Logo } from '@/components/Logo'
 import { Toaster } from '@/components/ui/sonner'
-import { TooltipProvider } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +22,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import DashboardPage from '@/pages/DashboardPage'
 import EpisodesPage from '@/pages/EpisodesPage'
@@ -40,6 +41,26 @@ const navItems = [
   { to: '/output-channels', label: 'Ausgabekanäle', icon: Share2Icon },
 ]
 
+function SidebarBrand() {
+  const { state, isMobile } = useSidebar()
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex flex-col items-center gap-1 px-1 pt-6 pb-1">
+          <Logo className="h-auto w-2/3" />
+          <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">
+            SetLister
+          </span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="right" align="center" hidden={state !== 'collapsed' || isMobile}>
+        SetLister
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
 function App() {
   const location = useLocation()
 
@@ -48,12 +69,7 @@ function App() {
       <SidebarProvider>
         <Sidebar collapsible="icon">
           <SidebarHeader>
-            <div className="flex items-center gap-2 px-2 py-1">
-              <Logo className="size-6 shrink-0 text-sidebar-foreground" />
-              <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">
-                SetLister
-              </span>
-            </div>
+            <SidebarBrand />
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
