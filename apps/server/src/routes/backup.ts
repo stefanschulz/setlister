@@ -16,6 +16,12 @@ import { parseBody } from "./helpers.js";
 
 const FORMAT_VERSION = 1;
 
+/** e.g. 20260823-1955, for a human-readable, sortable backup filename. */
+function formatTimestamp(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`;
+}
+
 const backupSchema = z.object({
   formatVersion: z.literal(FORMAT_VERSION),
   exportedAt: z.string(),
@@ -82,9 +88,11 @@ export function createBackupRouter(db: Db) {
       episodePlaylistEntries: await db.select().from(episodePlaylistEntries),
     };
 
-    const body = { formatVersion: FORMAT_VERSION, exportedAt: new Date().toISOString(), data };
-    c.header("Content-Disposition", `attachment; filename="setlister-backup.json"`);
-    return c.json(body);
+    const now = new Date();
+    const body = { formatVersion: FORMAT_VERSION, exportedAt: now.toISOString(), data };
+    c.header("Content-Disposition", `attachment; filename="setlister-backup-${formatTimestamp(now)}.json"`);
+    c.header("Content-Type", "application/json");
+    return c.body(JSON.stringify(body, null, 2));
   });
 
   router.post("/restore", async (c) => {
