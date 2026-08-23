@@ -1,4 +1,11 @@
-import { buildAllOutputs, formatContributorList, type PlaylistEntryForOutput } from '@setlister/shared'
+import {
+  buildAllOutputs,
+  formatContributorList,
+  type EpisodeDetail,
+  type OutputChannel,
+  type PlaylistEntryForOutput,
+  type Track,
+} from '@setlister/shared'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import {
@@ -9,7 +16,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { CopyIcon, GripVerticalIcon, TrashIcon } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -83,16 +90,47 @@ export default function EpisodePlaylistPage() {
   const { data: channels } = useOutputChannels()
   const setPlaylist = useSetPlaylist(episodeId)
 
-  const [entries, setEntries] = useState<LocalEntry[]>([])
+  if (isLoading) {
+    return <p className="text-sm text-muted-foreground">Lade…</p>
+  }
+  if (isError || !episode) {
+    return (
+      <p className="text-sm text-destructive">
+        Fehler beim Laden: {error instanceof Error ? error.message : 'Unbekannter Fehler'}
+      </p>
+    )
+  }
+
+  return (
+    <PlaylistContent
+      key={episode.id}
+      episode={episode}
+      tracks={tracks}
+      channels={channels}
+      setPlaylist={setPlaylist}
+      tracksIsError={tracksIsError}
+    />
+  )
+}
+
+function PlaylistContent({
+  episode,
+  tracks,
+  channels,
+  setPlaylist,
+  tracksIsError,
+}: {
+  episode: EpisodeDetail
+  tracks: Track[] | undefined
+  channels: OutputChannel[] | undefined
+  setPlaylist: ReturnType<typeof useSetPlaylist>
+  tracksIsError: boolean
+}) {
+  const [entries, setEntries] = useState<LocalEntry[]>(() =>
+    episode.playlist.map((e) => ({ localId: crypto.randomUUID(), trackId: e.track.id }))
+  )
   const [dirty, setDirty] = useState(false)
   const [newTrackDialogOpen, setNewTrackDialogOpen] = useState(false)
-
-  useEffect(() => {
-    if (episode) {
-      setEntries(episode.playlist.map((e) => ({ localId: crypto.randomUUID(), trackId: e.track.id })))
-      setDirty(false)
-    }
-  }, [episode])
 
   const tracksById = useMemo(() => new Map((tracks ?? []).map((t) => [t.id, t])), [tracks])
 
@@ -147,17 +185,6 @@ export default function EpisodePlaylistPage() {
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unbekannter Fehler')
     }
-  }
-
-  if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Lade…</p>
-  }
-  if (isError || !episode) {
-    return (
-      <p className="text-sm text-destructive">
-        Fehler beim Laden: {error instanceof Error ? error.message : 'Unbekannter Fehler'}
-      </p>
-    )
   }
 
   return (
