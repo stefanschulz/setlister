@@ -18,12 +18,38 @@ import { useRestoreBackup } from '@/queries/backup'
 
 const CONFIRM_PHRASE = 'ERSETZEN'
 
+/** e.g. 20260823-1955, using the client's local time (the server may run in a different timezone). */
+function formatTimestamp(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`
+}
+
 export default function BackupPage() {
   const navigate = useNavigate()
   const restoreBackup = useRestoreBackup()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
+  const [isExporting, setIsExporting] = useState(false)
+
+  async function handleExport() {
+    setIsExporting(true)
+    try {
+      const res = await fetch('/api/backup')
+      if (!res.ok) throw new Error(`API error ${res.status}`)
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `setlister-backup-${formatTimestamp(new Date())}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Backup konnte nicht heruntergeladen werden')
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   function openConfirm() {
     if (!selectedFile) return
@@ -62,10 +88,8 @@ export default function BackupPage() {
           Lädt eine JSON-Datei mit dem vollständigen aktuellen Datenbestand herunter – zur
           Datensicherung oder als Grundlage für eine spätere Wiederherstellung.
         </p>
-        <Button variant="outline" className="self-start" asChild>
-          <a href="/api/backup">
-            <DownloadIcon /> Backup herunterladen
-          </a>
+        <Button variant="outline" className="self-start" onClick={handleExport} disabled={isExporting}>
+          <DownloadIcon /> Backup herunterladen
         </Button>
       </div>
 

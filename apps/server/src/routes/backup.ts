@@ -16,12 +16,6 @@ import { parseBody } from "./helpers.js";
 
 const FORMAT_VERSION = 1;
 
-/** e.g. 20260823-1955, for a human-readable, sortable backup filename. */
-function formatTimestamp(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`;
-}
-
 const backupSchema = z.object({
   formatVersion: z.literal(FORMAT_VERSION),
   exportedAt: z.string(),
@@ -88,9 +82,10 @@ export function createBackupRouter(db: Db) {
       episodePlaylistEntries: await db.select().from(episodePlaylistEntries),
     };
 
-    const now = new Date();
-    const body = { formatVersion: FORMAT_VERSION, exportedAt: now.toISOString(), data };
-    c.header("Content-Disposition", `attachment; filename="setlister-backup-${formatTimestamp(now)}.json"`);
+    const body = { formatVersion: FORMAT_VERSION, exportedAt: new Date().toISOString(), data };
+    // Filename (with a client-local timestamp) is set by the browser when it triggers the
+    // download; this default only applies to direct/non-browser API access (e.g. curl).
+    c.header("Content-Disposition", `attachment; filename="setlister-backup.json"`);
     c.header("Content-Type", "application/json");
     return c.body(JSON.stringify(body, null, 2));
   });
