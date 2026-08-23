@@ -115,9 +115,9 @@ Künstler werden nach Rolle gruppiert und wie folgt zusammengesetzt:
 
 Jeder Einzelname bleibt dabei individuell verlinkt (HTML) bzw. individuell durch seinen Referenznamen ersetzt (Text). Die gleichzeitige Kombination aus Feature *und* Remix auf demselben Track ist im Modell abgedeckt, aber aktuell kein praktisch benötigter Fall.
 
-### 1.9 Zukünftige Erweiterung (v2, nicht Teil des ersten Release)
+### 1.9 Setlisten-Gesamtübersicht (umgesetzt)
 
-Zusätzlich zur Pflege einzelner Episoden soll eine **Gesamtübersicht** über alle jemals gespielten Tracks verfügbar sein, sortier- und filterbar (u. a. nach Folgennummer, Künstler). Das Datenmodell muss dies unterstützen, ist aber für v1 nicht umzusetzen.
+Zusätzlich zur Pflege einzelner Episoden gibt es unter "Setlisten" eine Gesamtübersicht über alle jemals gespielten Tracks (ein Eintrag je Episoden-Einsatz): Spalten Episode/Künstler/Track/Album, jede Spalte einzeln sortierbar (auf/ab) und mit Freitextfilter (entprellt), alle gepflegten Episoden (auch Entwürfe), paginiert mit einstellbarer Seitengröße (10/50/100/alle), Künstler- und Album-Links soweit hinterlegt. Keine Aggregation je Track. Daten werden einmalig komplett geladen, Filter/Sortierung/Pagination laufen client-seitig.
 
 ---
 
@@ -194,10 +194,9 @@ Ursprünglich stand eine Joomla-Erweiterung zur Debatte, da bereits eine Joomla-
 
 ## 4. Offene Punkte für die weitere Bearbeitung
 
-Umgesetzt sind: Datenmodell, API, Admin-Oberfläche (inkl. Playlist-Editor mit Live-Vorschau, Dashboard als Startseite), Ausgabekanäle als verwaltbare Entität, durchsuchbare Combobox mit Inline-Erstellung für Track/Künstler/Album/Episode (dauerhaft gesetzt, kein Wizard), sowie Docker-Betrieb mit persistenter Datenhaltung (M0–M11, siehe Git-Historie).
+Umgesetzt sind: Datenmodell, API, Admin-Oberfläche (inkl. Playlist-Editor mit Live-Vorschau, Dashboard als Startseite, Sidebar-Navigation mit Logo), Ausgabekanäle als verwaltbare Entität, durchsuchbare Combobox mit Inline-Erstellung für Track/Künstler/Album/Episode (dauerhaft gesetzt, kein Wizard), "Setlisten"-Gesamtübersicht aller jemals gespielten Tracks (§1.9: sortier-/filterbar je Spalte, paginiert), sowie Docker-Betrieb mit persistenter Datenhaltung (M0–M16, siehe Git-Historie).
 
 Noch offen:
-- v2-Feature "Gesamtübersicht aller Tracks" (§1.9): Fachkonzept (Such-/Filterkriterien, Darstellung) steht noch aus
 - CI-Pipeline (z. B. GitHub Actions für Lint/Test bei jedem Push) – kein Blocker, aber sinnvoller Folgeschritt vor breiterer Nutzung
 - Prüfen, ob weitere Künstler-Rollen (über Original/Feat./Remix hinaus) künftig benötigt werden
 - Ob gleichzeitige Kombination Feature + Remix auf einem Track tatsächlich praktisch benötigt wird (Modell/Formatierung unterstützen es bereits)

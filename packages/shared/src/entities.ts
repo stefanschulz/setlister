@@ -61,3 +61,11 @@ export interface EpisodePlaylistEntry {
 export interface EpisodeDetail extends Episode {
   playlist: EpisodePlaylistEntry[];
 }
+
+/** One playlist entry from any episode, for the cross-episode setlist overview (§1.9). */
+export interface SetlistEntry {
+  id: number;
+  episodeId: number;
+  episodeNumber: number;
+  track: Track;
+}

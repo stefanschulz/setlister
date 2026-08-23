@@ -49,18 +49,32 @@ export function buildHtmlFragment(entries: PlaylistEntryForOutput[]): string {
   const sorted = [...entries].sort((a, b) => a.position - b.position);
 
   const items = sorted.map(({ track }) => {
-    const contributors = formatContributorList(
-      track.contributors.map((c) => ({
-        name: linkedName(escapeHtml(c.artist.name), c.artist.websiteUrl),
-        role: c.role,
-        position: c.position,
-      })),
-    );
-    const album = linkedName(escapeHtml(track.album.title), track.album.link);
+    const contributors = buildContributorsHtml(track.contributors);
+    const album = buildLinkedHtml(track.album.title, track.album.link);
     return `<li>${contributors} - ${escapeHtml(track.title)} (${album})</li>`;
   });
 
   return `<ul>\n${items.map((item) => `  ${item}`).join("\n")}\n</ul>`;
+}
+
+/**
+ * Renders a track's contributors as the "<Künstler°>" HTML fragment (each
+ * name individually linked to its artist's websiteUrl, if any). Shared
+ * between the HTML preview output and the Setlisten overview table.
+ */
+export function buildContributorsHtml(contributors: ContributorForOutput[]): string {
+  return formatContributorList(
+    contributors.map((c) => ({
+      name: linkedName(escapeHtml(c.artist.name), c.artist.websiteUrl),
+      role: c.role,
+      position: c.position,
+    })),
+  );
+}
+
+/** Renders `text` as an HTML-escaped `<a>` if `url` is set, plain text otherwise. */
+export function buildLinkedHtml(text: string, url: string | null): string {
+  return linkedName(escapeHtml(text), url);
 }
 
 /**

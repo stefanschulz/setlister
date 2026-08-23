@@ -4,6 +4,7 @@ import {
   LibraryIcon,
   ListMusicIcon,
   Share2Icon,
+  TableIcon,
   UsersIcon,
 } from 'lucide-react'
 import { Link, Route, Routes, useLocation } from 'react-router'
@@ -31,10 +32,12 @@ import ArtistsPage from '@/pages/ArtistsPage'
 import AlbumsPage from '@/pages/AlbumsPage'
 import TracksPage from '@/pages/TracksPage'
 import OutputChannelsPage from '@/pages/OutputChannelsPage'
+import SetlistsPage from '@/pages/SetlistsPage'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboardIcon },
   { to: '/episodes', label: 'Episoden', icon: ListMusicIcon },
+  { to: '/setlists', label: 'Setlisten', icon: TableIcon },
   { to: '/artists', label: 'Künstler', icon: UsersIcon },
   { to: '/albums', label: 'Alben', icon: LibraryIcon },
   { to: '/tracks', label: 'Tracks', icon: Disc3Icon },
@@ -107,6 +110,7 @@ function App() {
               <Route path="/" element={<DashboardPage />} />
               <Route path="/episodes" element={<EpisodesPage />} />
               <Route path="/episodes/:id" element={<EpisodePlaylistPage />} />
+              <Route path="/setlists" element={<SetlistsPage />} />
               <Route path="/artists" element={<ArtistsPage />} />
               <Route path="/albums" element={<AlbumsPage />} />
               <Route path="/tracks" element={<TracksPage />} />

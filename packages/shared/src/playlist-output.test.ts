@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { OutputChannel } from "./entities.js";
 import {
   buildAllOutputs,
+  buildContributorsHtml,
   buildHtmlFragment,
+  buildLinkedHtml,
   buildTextFragment,
   type PlaylistEntryForOutput,
 } from "./playlist-output.js";
@@ -151,5 +153,34 @@ describe("buildAllOutputs", () => {
     expect(Object.keys(result.text).sort()).toEqual([String(facebook.id), String(threads.id)].sort());
     expect(result.text[facebook.id]).toBe("Artist A (Album)");
     expect(result.text[threads.id]).toBe("Artist A");
+  });
+});
+
+describe("buildContributorsHtml", () => {
+  it("links each contributor individually, applying the Original/Feat./Remix format", () => {
+    const html = buildContributorsHtml([
+      { role: "ORIGINAL", position: 0, artist: { name: "A", websiteUrl: "https://a.example", socialReferences: [] } },
+      { role: "FEATURING", position: 0, artist: { name: "B", websiteUrl: null, socialReferences: [] } },
+    ]);
+    expect(html).toBe('<a href="https://a.example">A</a> feat. B');
+  });
+
+  it("escapes HTML-significant characters in names", () => {
+    const html = buildContributorsHtml([
+      { role: "ORIGINAL", position: 0, artist: { name: "A & B", websiteUrl: null, socialReferences: [] } },
+    ]);
+    expect(html).toBe("A &amp; B");
+  });
+});
+
+describe("buildLinkedHtml", () => {
+  it("wraps the text in a link when a URL is given", () => {
+    expect(buildLinkedHtml("Album", "https://label.example")).toBe(
+      '<a href="https://label.example">Album</a>',
+    );
+  });
+
+  it("returns escaped plain text when no URL is given", () => {
+    expect(buildLinkedHtml("A & B", null)).toBe("A &amp; B");
   });
 });
