@@ -1,3 +1,29 @@
+/** Zod's `SafeParseError["error"].flatten()` shape, as returned by the server for validation failures. */
+interface FlattenedZodError {
+  formErrors: string[];
+  fieldErrors: Record<string, string[] | undefined>;
+}
+
+function isFlattenedZodError(value: unknown): value is FlattenedZodError {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Array.isArray((value as FlattenedZodError).formErrors) &&
+    typeof (value as FlattenedZodError).fieldErrors === "object"
+  );
+}
+
+function formatErrorMessage(error: unknown): string {
+  if (typeof error === "string") return error;
+  if (isFlattenedZodError(error)) {
+    const fieldMessages = Object.entries(error.fieldErrors).flatMap(([field, messages]) =>
+      (messages ?? []).map((m) => `${field}: ${m}`),
+    );
+    return [...error.formErrors, ...fieldMessages].join("; ") || "Ungültige Eingabe";
+  }
+  return String(error);
+}
+
 export class ApiError extends Error {
   status: number;
   body: unknown;
@@ -5,7 +31,7 @@ export class ApiError extends Error {
   constructor(status: number, body: unknown) {
     const message =
       typeof body === "object" && body && "error" in body
-        ? String((body as { error: unknown }).error)
+        ? formatErrorMessage((body as { error: unknown }).error)
         : `API error ${status}`;
     super(message);
     this.status = status;

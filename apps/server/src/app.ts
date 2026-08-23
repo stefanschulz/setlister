@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import type { Db } from "./db/client.js";
 import { createAlbumsRouter } from "./routes/albums.js";
 import { createArtistsRouter } from "./routes/artists.js";
+import { createBackupRouter } from "./routes/backup.js";
 import { createEpisodesRouter } from "./routes/episodes.js";
 import { createOutputChannelsRouter } from "./routes/output-channels.js";
 import { createSetlistsRouter } from "./routes/setlists.js";
@@ -18,6 +19,7 @@ export function createApp(db: Db) {
   app.route("/api/episodes", createEpisodesRouter(db));
   app.route("/api/output-channels", createOutputChannelsRouter(db));
   app.route("/api/setlists", createSetlistsRouter(db));
+  app.route("/api/backup", createBackupRouter(db));
 
   // In the Docker image, the built client assets are copied to CLIENT_DIST_PATH
   // (relative to this process's working directory). Not required for plain API

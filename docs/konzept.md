@@ -194,9 +194,10 @@ Ursprünglich stand eine Joomla-Erweiterung zur Debatte, da bereits eine Joomla-
 
 ## 4. Offene Punkte für die weitere Bearbeitung
 
-Umgesetzt sind: Datenmodell, API, Admin-Oberfläche (inkl. Playlist-Editor mit Live-Vorschau, Dashboard als Startseite, Sidebar-Navigation mit Logo), Ausgabekanäle als verwaltbare Entität, durchsuchbare Combobox mit Inline-Erstellung für Track/Künstler/Album/Episode (dauerhaft gesetzt, kein Wizard), "Setlisten"-Gesamtübersicht aller jemals gespielten Tracks (§1.9: sortier-/filterbar je Spalte, paginiert), sowie Docker-Betrieb mit persistenter Datenhaltung (M0–M16, siehe Git-Historie).
+Umgesetzt sind: Datenmodell, API, Admin-Oberfläche (inkl. Playlist-Editor mit Live-Vorschau, Dashboard als Startseite, Sidebar-Navigation mit Logo), Ausgabekanäle als verwaltbare Entität, durchsuchbare Combobox mit Inline-Erstellung für Track/Künstler/Album/Episode (dauerhaft gesetzt, kein Wizard), "Setlisten"-Gesamtübersicht aller jemals gespielten Tracks (§1.9: sortier-/filterbar je Spalte, paginiert), Backup-Export/Import (vollständiger JSON-Snapshot zur Datensicherung/-rettung, Restore ersetzt alle Daten), sowie Docker-Betrieb mit persistenter Datenhaltung (M0–M18, siehe Git-Historie).
 
 Noch offen:
+- Import mit "Append"-Modus (Daten ergänzen statt vollständig ersetzen) – bewusst zurückgestellt, ggf. später
 - CI-Pipeline (z. B. GitHub Actions für Lint/Test bei jedem Push) – kein Blocker, aber sinnvoller Folgeschritt vor breiterer Nutzung
 - Prüfen, ob weitere Künstler-Rollen (über Original/Feat./Remix hinaus) künftig benötigt werden
 - Ob gleichzeitige Kombination Feature + Remix auf einem Track tatsächlich praktisch benötigt wird (Modell/Formatierung unterstützen es bereits)

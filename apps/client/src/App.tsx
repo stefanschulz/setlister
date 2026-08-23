@@ -1,4 +1,5 @@
 import {
+  DatabaseBackupIcon,
   Disc3Icon,
   LayoutDashboardIcon,
   LibraryIcon,
@@ -33,6 +34,7 @@ import AlbumsPage from '@/pages/AlbumsPage'
 import TracksPage from '@/pages/TracksPage'
 import OutputChannelsPage from '@/pages/OutputChannelsPage'
 import SetlistsPage from '@/pages/SetlistsPage'
+import BackupPage from '@/pages/BackupPage'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboardIcon },
@@ -42,6 +44,7 @@ const navItems = [
   { to: '/albums', label: 'Alben', icon: LibraryIcon },
   { to: '/tracks', label: 'Tracks', icon: Disc3Icon },
   { to: '/output-channels', label: 'Ausgabekanäle', icon: Share2Icon },
+  { to: '/backup', label: 'Backup', icon: DatabaseBackupIcon },
 ]
 
 function SidebarBrand() {
@@ -115,6 +118,7 @@ function App() {
               <Route path="/albums" element={<AlbumsPage />} />
               <Route path="/tracks" element={<TracksPage />} />
               <Route path="/output-channels" element={<OutputChannelsPage />} />
+              <Route path="/backup" element={<BackupPage />} />
             </Routes>
           </main>
         </SidebarInset>
