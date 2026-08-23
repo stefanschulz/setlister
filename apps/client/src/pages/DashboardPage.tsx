@@ -1,3 +1,4 @@
+import { compareEpisodeNumbers, formatEpisodeNumber } from '@setlister/shared'
 import { ListMusicIcon, PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
@@ -51,7 +52,7 @@ export default function DashboardPage() {
   const publishedCount = episodes?.filter((e) => e.published).length ?? 0
   const draftEpisodes = (episodes ?? [])
     .filter((e) => !e.published)
-    .sort((a, b) => a.number - b.number)
+    .sort(compareEpisodeNumbers)
 
   return (
     <div className="flex flex-col gap-6">
@@ -86,7 +87,7 @@ export default function DashboardPage() {
             <TableBody>
               {draftEpisodes.map((episode) => (
                 <TableRow key={episode.id}>
-                  <TableCell>{episode.number}</TableCell>
+                  <TableCell>{formatEpisodeNumber(episode)}</TableCell>
                   <TableCell>{episode.headline}</TableCell>
                   <TableCell>{episode.topic}</TableCell>
                   <TableCell className="text-right">

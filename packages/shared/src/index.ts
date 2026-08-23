@@ -2,6 +2,7 @@ export const SHARED_PACKAGE_NAME = "@setlister/shared";
 
 export * from "./contributor-role.js";
 export * from "./entities.js";
+export * from "./episode-number.js";
 export * from "./playlist-output.js";
 export * from "./contributor-format.js";
 export * from "./schemas/artist.js";

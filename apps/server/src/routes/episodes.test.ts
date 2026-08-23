@@ -42,10 +42,27 @@ describe("POST /api/episodes — published status derivation", () => {
     expect(res.status).toBe(400);
   });
 
-  it("rejects a duplicate episode number", async () => {
+  it("rejects a duplicate episode number (same implicit empty suffix)", async () => {
     await createEpisode({ number: 1, headline: "H", topic: "T" });
     const res = await createEpisode({ number: 1, headline: "H2", topic: "T2" });
     expect(res.status).toBe(400);
+  });
+
+  it("rejects a duplicate number+suffix combination", async () => {
+    await createEpisode({ number: 103, suffix: "v1", headline: "H", topic: "T" });
+    const res = await createEpisode({ number: 103, suffix: "v1", headline: "H2", topic: "T2" });
+    expect(res.status).toBe(400);
+  });
+
+  it("allows the same number with a different suffix, including a plain (empty-suffix) variant", async () => {
+    await createEpisode({ number: 357, headline: "Plain", topic: "T" });
+    const res = await createEpisode({ number: 357, suffix: " (xe)", headline: "Extended", topic: "T" });
+    expect(res.status).toBe(201);
+  });
+
+  it("defaults suffix to an empty string when omitted", async () => {
+    const res = await createEpisode({ number: 1, headline: "H", topic: "T" });
+    expect((await res.json()).suffix).toBe("");
   });
 });
 
@@ -83,6 +100,30 @@ describe("PUT /api/episodes/:id", () => {
       body: JSON.stringify({ number: 1, headline: "H", topic: "T", airDate: "2026-02-01" }),
     });
     expect((await res.json()).published).toBe(true);
+  });
+
+  it("rejects renaming into another episode's number+suffix combination", async () => {
+    await createEpisode({ number: 103, suffix: "v1", headline: "A", topic: "T" });
+    const b = await (await createEpisode({ number: 103, suffix: "v2", headline: "B", topic: "T" })).json();
+
+    const res = await app.request(`/api/episodes/${b.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ number: 103, suffix: "v1", headline: "B", topic: "T" }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("allows changing only the suffix while keeping the same number", async () => {
+    const created = await (await createEpisode({ number: 103, suffix: "v1", headline: "H", topic: "T" })).json();
+
+    const res = await app.request(`/api/episodes/${created.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ number: 103, suffix: "v2", headline: "H", topic: "T" }),
+    });
+    expect(res.status).toBe(200);
+    expect((await res.json()).suffix).toBe("v2");
   });
 });
 

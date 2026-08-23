@@ -52,13 +52,18 @@ export function createEpisodesRouter(db: Db) {
   router.post("/", async (c) => {
     const parsed = await parseBody(c, episodeInputSchema);
     if (!parsed.success) return parsed.response;
+    const suffix = parsed.data.suffix ?? "";
 
-    const clash = await db.query.episodes.findFirst({ where: eq(episodes.number, parsed.data.number) });
-    if (clash) return c.json({ error: `Episode number ${parsed.data.number} is already in use` }, 400);
+    const clash = await db.query.episodes.findFirst({
+      where: and(eq(episodes.number, parsed.data.number), eq(episodes.suffix, suffix)),
+    });
+    if (clash) {
+      return c.json({ error: `Episode number ${parsed.data.number}${suffix} is already in use` }, 400);
+    }
 
     const [created] = await db
       .insert(episodes)
-      .values({ ...parsed.data, airDate: parsed.data.airDate ?? null })
+      .values({ ...parsed.data, suffix, airDate: parsed.data.airDate ?? null })
       .returning();
     return c.json(withPublishedFlag(created), 201);
   });
@@ -72,15 +77,18 @@ export function createEpisodesRouter(db: Db) {
 
     const parsed = await parseBody(c, episodeInputSchema);
     if (!parsed.success) return parsed.response;
+    const suffix = parsed.data.suffix ?? "";
 
     const clash = await db.query.episodes.findFirst({
-      where: and(eq(episodes.number, parsed.data.number), ne(episodes.id, id)),
+      where: and(eq(episodes.number, parsed.data.number), eq(episodes.suffix, suffix), ne(episodes.id, id)),
     });
-    if (clash) return c.json({ error: `Episode number ${parsed.data.number} is already in use` }, 400);
+    if (clash) {
+      return c.json({ error: `Episode number ${parsed.data.number}${suffix} is already in use` }, 400);
+    }
 
     const [updated] = await db
       .update(episodes)
-      .set({ ...parsed.data, airDate: parsed.data.airDate ?? null })
+      .set({ ...parsed.data, suffix, airDate: parsed.data.airDate ?? null })
       .where(eq(episodes.id, id))
       .returning();
     return c.json(withPublishedFlag(updated));

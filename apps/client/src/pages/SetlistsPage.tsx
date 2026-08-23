@@ -1,4 +1,10 @@
-import { buildContributorsHtml, buildLinkedHtml, formatContributorList } from '@setlister/shared'
+import {
+  buildContributorsHtml,
+  buildLinkedHtml,
+  compareEpisodeNumbers,
+  formatContributorList,
+  formatEpisodeNumber,
+} from '@setlister/shared'
 import type { SetlistEntry } from '@setlister/shared'
 import { ArrowDownIcon, ArrowUpIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -31,6 +37,7 @@ type PageSize = 10 | 50 | 100 | 'all'
 interface Row {
   entry: SetlistEntry
   artistText: string
+  episodeDisplay: string
 }
 
 const COLUMNS: { key: SortColumn; label: string }[] = [
@@ -43,7 +50,10 @@ const COLUMNS: { key: SortColumn; label: string }[] = [
 function compareRows(a: Row, b: Row, column: SortColumn): number {
   switch (column) {
     case 'episode':
-      return a.entry.episodeNumber - b.entry.episodeNumber
+      return compareEpisodeNumbers(
+        { number: a.entry.episodeNumber, suffix: a.entry.episodeSuffix },
+        { number: b.entry.episodeNumber, suffix: b.entry.episodeSuffix },
+      )
     case 'artist':
       return a.artistText.localeCompare(b.artistText, 'de')
     case 'track':
@@ -138,6 +148,7 @@ export default function SetlistsPage() {
             position: c.position,
           })),
         ),
+        episodeDisplay: formatEpisodeNumber({ number: entry.episodeNumber, suffix: entry.episodeSuffix }),
       })),
     [entries],
   )
@@ -150,7 +161,7 @@ export default function SetlistsPage() {
 
     const filtered = rows.filter(
       (row) =>
-        (!episodeNeedle || String(row.entry.episodeNumber).includes(episodeNeedle)) &&
+        (!episodeNeedle || row.episodeDisplay.toLowerCase().includes(episodeNeedle)) &&
         (!artistNeedle || row.artistText.toLowerCase().includes(artistNeedle)) &&
         (!trackNeedle || row.entry.track.title.toLowerCase().includes(trackNeedle)) &&
         (!albumNeedle || row.entry.track.album.title.toLowerCase().includes(albumNeedle)),
@@ -258,7 +269,7 @@ export default function SetlistsPage() {
               )}
               {pageRows.map((row) => (
                 <TableRow key={row.entry.id}>
-                  <TableCell>{row.entry.episodeNumber}</TableCell>
+                  <TableCell>{row.episodeDisplay}</TableCell>
                   <TableCell
                     className="*:[a]:underline *:[a]:underline-offset-2 *:[a]:decoration-muted-foreground *:[a]:hover:decoration-foreground"
                     dangerouslySetInnerHTML={{

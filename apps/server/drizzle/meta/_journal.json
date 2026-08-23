@@ -22,6 +22,13 @@
       "when": 1787406603175,
       "tag": "0002_nasty_rage",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1787482774921,
+      "tag": "0003_gray_thunderbolt_ross",
+      "breakpoints": true
     }
   ]
 }

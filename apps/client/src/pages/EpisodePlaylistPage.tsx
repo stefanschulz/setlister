@@ -1,6 +1,7 @@
 import {
   buildAllOutputs,
   formatContributorList,
+  formatEpisodeNumber,
   type EpisodeDetail,
   type OutputChannel,
   type PlaylistEntryForOutput,
@@ -195,7 +196,7 @@ function PlaylistContent({
         </Link>
         <div className="mt-1 flex items-center gap-2">
           <h1 className="text-lg font-semibold">
-            #{episode.number} – {episode.headline}
+            #{formatEpisodeNumber(episode)} – {episode.headline}
           </h1>
           <Badge variant={episode.published ? 'default' : 'secondary'}>
             {episode.published ? 'Veröffentlicht' : 'Entwurf'}

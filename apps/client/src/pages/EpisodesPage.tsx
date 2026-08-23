@@ -1,4 +1,9 @@
-import { type Episode, type EpisodeInput, episodeInputSchema } from '@setlister/shared'
+import {
+  type Episode,
+  type EpisodeInput,
+  episodeInputSchema,
+  formatEpisodeNumber,
+} from '@setlister/shared'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ListMusicIcon, PlusIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -34,11 +39,12 @@ import {
   useUpdateEpisode,
 } from '@/queries/episodes'
 
-const emptyValues: EpisodeInput = { number: 0, headline: '', topic: '', airDate: undefined }
+const emptyValues: EpisodeInput = { number: 0, suffix: '', headline: '', topic: '', airDate: undefined }
 
 function toFormValues(episode: Episode): EpisodeInput {
   return {
     number: episode.number,
+    suffix: episode.suffix,
     headline: episode.headline,
     topic: episode.topic,
     airDate: episode.airDate ?? undefined,
@@ -73,10 +79,10 @@ export function EpisodeDialog({
       let result: Episode
       if (episode) {
         result = await updateEpisode.mutateAsync({ id: episode.id, input: values })
-        toast.success(`Episode ${values.number} aktualisiert`)
+        toast.success(`Episode ${formatEpisodeNumber({ number: values.number, suffix: values.suffix ?? '' })} aktualisiert`)
       } else {
         result = await createEpisode.mutateAsync(values)
-        toast.success(`Episode ${values.number} angelegt`)
+        toast.success(`Episode ${formatEpisodeNumber({ number: values.number, suffix: values.suffix ?? '' })} angelegt`)
       }
       onOpenChange(false)
       onCreated?.(result)
@@ -92,12 +98,21 @@ export function EpisodeDialog({
           <DialogTitle>{episode ? 'Episode bearbeiten' : 'Episode anlegen'}</DialogTitle>
         </DialogHeader>
         <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="number">Ausgabennummer</Label>
-            <Input id="number" type="number" {...form.register('number', { valueAsNumber: true })} />
-            {form.formState.errors.number && (
-              <p className="text-xs text-destructive">{form.formState.errors.number.message}</p>
-            )}
+          <div className="flex gap-3">
+            <div className="flex flex-1 flex-col gap-1.5">
+              <Label htmlFor="number">Ausgabennummer</Label>
+              <Input id="number" type="number" {...form.register('number', { valueAsNumber: true })} />
+              {form.formState.errors.number && (
+                <p className="text-xs text-destructive">{form.formState.errors.number.message}</p>
+              )}
+            </div>
+            <div className="flex flex-1 flex-col gap-1.5">
+              <Label htmlFor="suffix">Zusatz (optional)</Label>
+              <Input id="suffix" placeholder="z. B. v1, (xe)" {...form.register('suffix')} />
+              {form.formState.errors.suffix && (
+                <p className="text-xs text-destructive">{form.formState.errors.suffix.message}</p>
+              )}
+            </div>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="headline">Schlagzeile</Label>
@@ -149,10 +164,10 @@ export default function EpisodesPage() {
   }
 
   async function onDelete(episode: Episode) {
-    if (!window.confirm(`Episode ${episode.number} wirklich löschen?`)) return
+    if (!window.confirm(`Episode ${formatEpisodeNumber(episode)} wirklich löschen?`)) return
     try {
       await deleteEpisode.mutateAsync(episode.id)
-      toast.success(`Episode ${episode.number} gelöscht`)
+      toast.success(`Episode ${formatEpisodeNumber(episode)} gelöscht`)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unbekannter Fehler')
     }
@@ -187,7 +202,7 @@ export default function EpisodesPage() {
           <TableBody>
             {episodes?.map((episode) => (
               <TableRow key={episode.id}>
-                <TableCell>{episode.number}</TableCell>
+                <TableCell>{formatEpisodeNumber(episode)}</TableCell>
                 <TableCell>{episode.headline}</TableCell>
                 <TableCell>{episode.topic}</TableCell>
                 <TableCell>

@@ -47,6 +47,8 @@ export interface Track {
 export interface Episode {
   id: number;
   number: number;
+  /** Free-text addition to `number` for irregular episode identifiers (e.g. "v1", " (xe)"); "" if none. */
+  suffix: string;
   headline: string;
   topic: string;
   airDate: string | null;
@@ -67,5 +69,6 @@ export interface SetlistEntry {
   id: number;
   episodeId: number;
   episodeNumber: number;
+  episodeSuffix: string;
   track: Track;
 }

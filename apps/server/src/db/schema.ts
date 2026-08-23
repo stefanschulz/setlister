@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 
 export const CONTRIBUTOR_ROLES = ["ORIGINAL", "FEATURING", "REMIX"] as const;
 export type ContributorRole = (typeof CONTRIBUTOR_ROLES)[number];
@@ -61,12 +61,16 @@ export const trackContributors = sqliteTable("track_contributors", {
 
 export const episodes = sqliteTable("episodes", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  number: integer("number").notNull().unique(),
+  number: integer("number").notNull(),
+  // Free-text addition for irregular episode identifiers (e.g. "v1", " (xe)");
+  // "" (not null) so the uniqueness check below also catches plain-number
+  // duplicates — SQLite treats every NULL as distinct, even from another NULL.
+  suffix: text("suffix").notNull().default(""),
   headline: text("headline").notNull(),
   topic: text("topic").notNull(),
   // ISO date string (YYYY-MM-DD). Null = draft, set = published (see §1.1).
   airDate: text("air_date"),
-});
+}, (table) => [unique().on(table.number, table.suffix)]);
 
 export const episodePlaylistEntries = sqliteTable("episode_playlist_entries", {
   id: integer("id").primaryKey({ autoIncrement: true }),

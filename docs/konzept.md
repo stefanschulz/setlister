@@ -133,7 +133,7 @@ Zusätzlich zur Pflege einzelner Episoden gibt es unter "Setlisten" eine Gesamt�
 | **Album** | id, title (Pflicht), link (optional) |
 | **Track** | id, title (Pflicht), albumId (FK, Pflicht) |
 | **TrackContributor** | trackId (FK), artistId (FK), role (`ORIGINAL` \| `FEATURING` \| `REMIX`), position (Sortierung innerhalb der Rolle) |
-| **Episode** | id, number, headline, topic, airDate (optional/nullable) |
+| **Episode** | id, number, suffix (Freitext-Zusatz für unregelmäßige Nummern wie "v1"/" (xe)", leer wenn keiner; eindeutig zusammen mit number), headline, topic, airDate (optional/nullable) |
 | **EpisodePlaylistEntry** | episodeId (FK), trackId (FK), position (Sendereihenfolge) |
 
 ### 2.2 Beziehungen
