@@ -1,7 +1,7 @@
 import { type Artist, type ArtistInput, artistInputSchema } from '@setlister/shared'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { PlusIcon, TrashIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { PlusIcon, TrashIcon, XIcon } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -32,10 +32,35 @@ import {
 import { ApiError } from '@/api/client'
 import { ListStatus } from '@/components/list-status'
 import { PaginationBar } from '@/components/pagination-bar'
+import { SortableHead, type SortDirection } from '@/components/sortable-table-head'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { usePagination } from '@/hooks/use-pagination'
 import { emptyToUndefined } from '@/lib/form'
 import { useArtists, useCreateArtist, useDeleteArtist, useUpdateArtist } from '@/queries/artists'
 import { useOutputChannels } from '@/queries/output-channels'
+
+type SortColumn = 'name' | 'realName' | 'websiteUrl'
+
+interface Row {
+  artist: Artist
+}
+
+const COLUMNS: { key: SortColumn; label: string }[] = [
+  { key: 'name', label: 'Name' },
+  { key: 'realName', label: 'Realname' },
+  { key: 'websiteUrl', label: 'Website' },
+]
+
+function compareRows(a: Row, b: Row, column: SortColumn): number {
+  switch (column) {
+    case 'name':
+      return a.artist.name.localeCompare(b.artist.name, 'de')
+    case 'realName':
+      return (a.artist.realName ?? '').localeCompare(b.artist.realName ?? '', 'de')
+    case 'websiteUrl':
+      return (a.artist.websiteUrl ?? '').localeCompare(b.artist.websiteUrl ?? '', 'de')
+  }
+}
 
 const emptyValues: ArtistInput = {
   name: '',
@@ -191,10 +216,69 @@ export default function ArtistsPage() {
   const deleteArtist = useDeleteArtist()
   const [dialogArtist, setDialogArtist] = useState<Artist | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const { pageSize, setPageSize, page, setPage, totalPages, pageItems: pageArtists } = usePagination(
-    artists ?? [],
+
+  const [sortColumn, setSortColumn] = useState<SortColumn>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+
+  const [filterName, setFilterName] = useState('')
+  const [filterRealName, setFilterRealName] = useState('')
+  const [filterWebsiteUrl, setFilterWebsiteUrl] = useState('')
+  // Clearing a field (manually or via reset) applies instantly — only new,
+  // non-empty text gets debounced.
+  const debouncedFilterName = useDebouncedValue(filterName, filterName ? 300 : 0)
+  const debouncedFilterRealName = useDebouncedValue(filterRealName, filterRealName ? 300 : 0)
+  const debouncedFilterWebsiteUrl = useDebouncedValue(filterWebsiteUrl, filterWebsiteUrl ? 300 : 0)
+
+  const hasActiveFilters = Boolean(filterName || filterRealName || filterWebsiteUrl)
+
+  function resetFilters() {
+    setFilterName('')
+    setFilterRealName('')
+    setFilterWebsiteUrl('')
+  }
+
+  function handleSort(column: SortColumn) {
+    if (column === sortColumn) {
+      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+  }
+
+  const rows: Row[] = useMemo(() => (artists ?? []).map((artist) => ({ artist })), [artists])
+
+  const filteredSorted = useMemo(() => {
+    const nameNeedle = debouncedFilterName.trim().toLowerCase()
+    const realNameNeedle = debouncedFilterRealName.trim().toLowerCase()
+    const websiteNeedle = debouncedFilterWebsiteUrl.trim().toLowerCase()
+
+    const filtered = rows.filter(
+      (row) =>
+        (!nameNeedle || row.artist.name.toLowerCase().includes(nameNeedle)) &&
+        (!realNameNeedle || (row.artist.realName ?? '').toLowerCase().includes(realNameNeedle)) &&
+        (!websiteNeedle || (row.artist.websiteUrl ?? '').toLowerCase().includes(websiteNeedle)),
+    )
+
+    const sign = sortDirection === 'asc' ? 1 : -1
+    return filtered.sort((a, b) => sign * compareRows(a, b, sortColumn))
+  }, [
+    rows,
+    debouncedFilterName,
+    debouncedFilterRealName,
+    debouncedFilterWebsiteUrl,
+    sortColumn,
+    sortDirection,
+  ])
+
+  const { pageSize, setPageSize, page, setPage, totalPages, pageItems: pageRows } = usePagination(
+    filteredSorted,
     50,
   )
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedFilterName, debouncedFilterRealName, debouncedFilterWebsiteUrl, setPage])
 
   function openCreate() {
     setDialogArtist(null)
@@ -220,31 +304,78 @@ export default function ArtistsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Künstler</h1>
-        <Button onClick={openCreate}>
-          <PlusIcon /> Neu
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={resetFilters} disabled={!hasActiveFilters}>
+            <XIcon /> Filter zurücksetzen
+          </Button>
+          <Button onClick={openCreate}>
+            <PlusIcon /> Neu
+          </Button>
+        </div>
       </div>
 
       <ListStatus
         isLoading={isLoading}
         isError={isError}
         error={error}
-        isEmpty={(artists?.length ?? 0) === 0}
+        isEmpty={rows.length === 0}
         emptyMessage="Noch keine Künstler angelegt."
       >
         <div className="flex flex-col gap-3">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Realname</TableHead>
-              <TableHead>Website</TableHead>
+              {COLUMNS.map((col) => (
+                <SortableHead
+                  key={col.key}
+                  column={col.key}
+                  label={col.label}
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                />
+              ))}
               <TableHead>Social-Referenzen</TableHead>
               <TableHead className="text-right">Aktionen</TableHead>
             </TableRow>
+            <TableRow>
+              <TableHead>
+                <Input
+                  value={filterName}
+                  onChange={(e) => setFilterName(e.target.value)}
+                  placeholder="Filtern…"
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  value={filterRealName}
+                  onChange={(e) => setFilterRealName(e.target.value)}
+                  placeholder="Filtern…"
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  value={filterWebsiteUrl}
+                  onChange={(e) => setFilterWebsiteUrl(e.target.value)}
+                  placeholder="Filtern…"
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead />
+              <TableHead />
+            </TableRow>
           </TableHeader>
           <TableBody>
-            {pageArtists.map((artist) => (
+            {pageRows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                  Keine Treffer für die aktuellen Filter.
+                </TableCell>
+              </TableRow>
+            )}
+            {pageRows.map(({ artist }) => (
               <TableRow key={artist.id}>
                 <TableCell>{artist.name}</TableCell>
                 <TableCell>{artist.realName ?? '–'}</TableCell>
@@ -269,7 +400,7 @@ export default function ArtistsPage() {
           page={page}
           totalPages={totalPages}
           onPageChange={setPage}
-          totalItems={artists?.length ?? 0}
+          totalItems={filteredSorted.length}
         />
         </div>
       </ListStatus>
