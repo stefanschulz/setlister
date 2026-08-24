@@ -146,7 +146,13 @@ export function createEpisodesRouter(db: Db) {
 
     const playlist = await loadPlaylist(db, id);
     const channels = await db.query.outputChannels.findMany();
-    return c.json(buildAllOutputs(playlist, channels));
+    return c.json(
+      buildAllOutputs(playlist, channels, {
+        number: existing.number,
+        suffix: existing.suffix,
+        headline: existing.headline,
+      }),
+    );
   });
 
   return router;

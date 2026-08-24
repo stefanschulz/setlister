@@ -23,7 +23,15 @@ const backupSchema = z.object({
     artists: z.array(
       z.object({ id: z.number(), name: z.string(), realName: z.string().nullable(), websiteUrl: z.string().nullable() }),
     ),
-    outputChannels: z.array(z.object({ id: z.number(), name: z.string(), pattern: z.string() })),
+    outputChannels: z.array(
+      z.object({
+        id: z.number(),
+        name: z.string(),
+        pattern: z.string(),
+        // Optional/defaulted so backups made before this field existed still restore.
+        headlinePattern: z.string().optional().default(""),
+      }),
+    ),
     artistSocialReferences: z.array(
       z.object({ id: z.number(), artistId: z.number(), channelId: z.number(), referenceName: z.string() }),
     ),

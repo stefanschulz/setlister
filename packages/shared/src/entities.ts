@@ -4,6 +4,7 @@ export interface OutputChannel {
   id: number;
   name: string;
   pattern: string;
+  headlinePattern: string;
 }
 
 export interface SocialReference {

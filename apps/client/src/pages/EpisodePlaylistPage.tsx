@@ -151,8 +151,13 @@ function PlaylistContent({
   )
 
   const preview = useMemo(
-    () => buildAllOutputs(outputEntries, channels ?? []),
-    [outputEntries, channels],
+    () =>
+      buildAllOutputs(outputEntries, channels ?? [], {
+        number: episode.number,
+        suffix: episode.suffix,
+        headline: episode.headline,
+      }),
+    [outputEntries, channels, episode.number, episode.suffix, episode.headline],
   )
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
@@ -294,19 +299,38 @@ function PlaylistContent({
             </TabsContent>
 
             {channels?.map((channel) => (
-              <TabsContent key={channel.id} value={String(channel.id)} className="flex flex-col gap-2">
-                <p className="rounded-md border p-3 text-sm whitespace-pre-wrap">
-                  {preview.text[channel.id] || '–'}
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="self-start"
-                  onClick={() => copyToClipboard(preview.text[channel.id], channel.name)}
-                >
-                  <CopyIcon /> {channel.name}-Text kopieren
-                </Button>
+              <TabsContent key={channel.id} value={String(channel.id)} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-xs font-medium text-muted-foreground">Vollständiger Post-Text</h3>
+                  <p className="rounded-md border p-3 text-sm whitespace-pre-wrap">
+                    {preview.headlineText[channel.id] || '–'}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="self-start"
+                    onClick={() => copyToClipboard(preview.headlineText[channel.id], `${channel.name}-Post`)}
+                  >
+                    <CopyIcon /> Post-Text kopieren
+                  </Button>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-xs font-medium text-muted-foreground">Nur Tracklist</h3>
+                  <p className="rounded-md border p-3 text-sm whitespace-pre-wrap">
+                    {preview.text[channel.id] || '–'}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="self-start"
+                    onClick={() => copyToClipboard(preview.text[channel.id], channel.name)}
+                  >
+                    <CopyIcon /> {channel.name}-Text kopieren
+                  </Button>
+                </div>
               </TabsContent>
             ))}
           </Tabs>

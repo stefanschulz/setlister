@@ -1,0 +1,1 @@
+ALTER TABLE `output_channels` ADD `headline_pattern` text DEFAULT '' NOT NULL;

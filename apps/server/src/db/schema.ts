@@ -13,11 +13,14 @@ export const artists = sqliteTable("artists", {
 
 // User-managed, not a fixed enum: docs/konzept.md §1.3 requires the platform
 // list to stay extensible, and each channel also carries its own output
-// pattern (placeholders {artists}/{track}/{album}) for text-fragment output.
+// pattern (placeholders {artists}/{track}/{album}) for text-fragment output,
+// plus a headline pattern (placeholders {headline}/{episode}/{artists}) for
+// the full, ready-to-post caption text.
 export const outputChannels = sqliteTable("output_channels", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
   pattern: text("pattern").notNull(),
+  headlinePattern: text("headline_pattern").notNull().default(""),
 });
 
 export const artistSocialReferences = sqliteTable("artist_social_references", {

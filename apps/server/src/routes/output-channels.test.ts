@@ -13,6 +13,8 @@ beforeEach(() => {
   app = createApp(db);
 });
 
+const HEADLINE_PATTERN = "{headline} at episode {episode} having {artists}";
+
 async function createChannel(body: Record<string, unknown>) {
   return app.request("/api/output-channels", {
     method: "POST",
@@ -23,31 +25,50 @@ async function createChannel(body: Record<string, unknown>) {
 
 describe("POST /api/output-channels", () => {
   it("creates an output channel", async () => {
-    const res = await createChannel({ name: "Facebook", pattern: "{artists} ({album})" });
+    const res = await createChannel({
+      name: "Facebook",
+      pattern: "{artists} ({album})",
+      headlinePattern: HEADLINE_PATTERN,
+    });
     expect(res.status).toBe(201);
-    expect(await res.json()).toMatchObject({ name: "Facebook", pattern: "{artists} ({album})" });
+    expect(await res.json()).toMatchObject({
+      name: "Facebook",
+      pattern: "{artists} ({album})",
+      headlinePattern: HEADLINE_PATTERN,
+    });
   });
 
   it("rejects a missing name", async () => {
-    const res = await createChannel({ pattern: "{artists}" });
+    const res = await createChannel({ pattern: "{artists}", headlinePattern: HEADLINE_PATTERN });
     expect(res.status).toBe(400);
   });
 
   it("rejects a missing pattern", async () => {
-    const res = await createChannel({ name: "Facebook" });
+    const res = await createChannel({ name: "Facebook", headlinePattern: HEADLINE_PATTERN });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a missing headlinePattern", async () => {
+    const res = await createChannel({ name: "Facebook", pattern: "{artists}" });
     expect(res.status).toBe(400);
   });
 
   it("rejects a duplicate name", async () => {
-    await createChannel({ name: "Facebook", pattern: "{artists}" });
-    const res = await createChannel({ name: "Facebook", pattern: "{artists} ({album})" });
+    await createChannel({ name: "Facebook", pattern: "{artists}", headlinePattern: HEADLINE_PATTERN });
+    const res = await createChannel({
+      name: "Facebook",
+      pattern: "{artists} ({album})",
+      headlinePattern: HEADLINE_PATTERN,
+    });
     expect(res.status).toBe(400);
   });
 });
 
 describe("GET /api/output-channels", () => {
   it("lists and fetches channels", async () => {
-    const created = await (await createChannel({ name: "Facebook", pattern: "{artists}" })).json();
+    const created = await (
+      await createChannel({ name: "Facebook", pattern: "{artists}", headlinePattern: HEADLINE_PATTERN })
+    ).json();
 
     const list = await (await app.request("/api/output-channels")).json();
     expect(list).toHaveLength(1);
@@ -64,25 +85,33 @@ describe("GET /api/output-channels", () => {
 
 describe("PUT /api/output-channels/:id", () => {
   it("updates a channel", async () => {
-    const created = await (await createChannel({ name: "Facebook", pattern: "{artists}" })).json();
+    const created = await (
+      await createChannel({ name: "Facebook", pattern: "{artists}", headlinePattern: HEADLINE_PATTERN })
+    ).json();
 
     const res = await app.request(`/api/output-channels/${created.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Facebook", pattern: "{artists} ({album})" }),
+      body: JSON.stringify({
+        name: "Facebook",
+        pattern: "{artists} ({album})",
+        headlinePattern: HEADLINE_PATTERN,
+      }),
     });
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ pattern: "{artists} ({album})" });
   });
 
   it("rejects renaming to a name already used by another channel", async () => {
-    await createChannel({ name: "Facebook", pattern: "{artists}" });
-    const other = await (await createChannel({ name: "Instagram", pattern: "{artists}" })).json();
+    await createChannel({ name: "Facebook", pattern: "{artists}", headlinePattern: HEADLINE_PATTERN });
+    const other = await (
+      await createChannel({ name: "Instagram", pattern: "{artists}", headlinePattern: HEADLINE_PATTERN })
+    ).json();
 
     const res = await app.request(`/api/output-channels/${other.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Facebook", pattern: "{artists}" }),
+      body: JSON.stringify({ name: "Facebook", pattern: "{artists}", headlinePattern: HEADLINE_PATTERN }),
     });
     expect(res.status).toBe(400);
   });
@@ -91,7 +120,7 @@ describe("PUT /api/output-channels/:id", () => {
     const res = await app.request("/api/output-channels/999", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "X", pattern: "{artists}" }),
+      body: JSON.stringify({ name: "X", pattern: "{artists}", headlinePattern: HEADLINE_PATTERN }),
     });
     expect(res.status).toBe(404);
   });
@@ -99,14 +128,18 @@ describe("PUT /api/output-channels/:id", () => {
 
 describe("DELETE /api/output-channels/:id", () => {
   it("deletes an unreferenced channel", async () => {
-    const created = await (await createChannel({ name: "Facebook", pattern: "{artists}" })).json();
+    const created = await (
+      await createChannel({ name: "Facebook", pattern: "{artists}", headlinePattern: HEADLINE_PATTERN })
+    ).json();
 
     const res = await app.request(`/api/output-channels/${created.id}`, { method: "DELETE" });
     expect(res.status).toBe(204);
   });
 
   it("returns 409 when the channel is referenced by a social reference", async () => {
-    const created = await (await createChannel({ name: "Facebook", pattern: "{artists}" })).json();
+    const created = await (
+      await createChannel({ name: "Facebook", pattern: "{artists}", headlinePattern: HEADLINE_PATTERN })
+    ).json();
     const [artist] = await db.insert(artists).values({ name: "Artist" }).returning();
     await db
       .insert(artistSocialReferences)

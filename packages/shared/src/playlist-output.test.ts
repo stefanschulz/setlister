@@ -3,11 +3,15 @@ import type { OutputChannel } from "./entities.js";
 import {
   buildAllOutputs,
   buildContributorsHtml,
+  buildHeadlineFragment,
   buildHtmlFragment,
   buildLinkedHtml,
   buildTextFragment,
+  type EpisodeForOutput,
   type PlaylistEntryForOutput,
 } from "./playlist-output.js";
+
+const episode: EpisodeForOutput = { number: 821, suffix: "", headline: "Crispy variations" };
 
 function entry(overrides: Partial<PlaylistEntryForOutput["track"]> = {}, position = 0): PlaylistEntryForOutput {
   return {
@@ -94,8 +98,18 @@ describe("buildHtmlFragment", () => {
 });
 
 describe("buildTextFragment", () => {
-  const facebook: OutputChannel = { id: 1, name: "Facebook", pattern: "{artists} ({album})" };
-  const bluesky: OutputChannel = { id: 2, name: "Bluesky", pattern: "{artists}" };
+  const facebook: OutputChannel = {
+    id: 1,
+    name: "Facebook",
+    pattern: "{artists} ({album})",
+    headlinePattern: "{headline} at episode {episode} having {artists}",
+  };
+  const bluesky: OutputChannel = {
+    id: 2,
+    name: "Bluesky",
+    pattern: "{artists}",
+    headlinePattern: "Episode {episode} having {artists}",
+  };
 
   const artistWithRefs = {
     name: "Artist A",
@@ -117,7 +131,12 @@ describe("buildTextFragment", () => {
   });
 
   it("falls back to the plain artist name when no reference exists for the channel", () => {
-    const otherChannel: OutputChannel = { id: 999, name: "Threads", pattern: "{artists}" };
+    const otherChannel: OutputChannel = {
+      id: 999,
+      name: "Threads",
+      pattern: "{artists}",
+      headlinePattern: "Episode {episode} having {artists}",
+    };
     const entries = [entry({ contributors: [{ role: "ORIGINAL", position: 0, artist: artistWithRefs }] })];
     expect(buildTextFragment(entries, otherChannel)).toBe("Artist A");
   });
@@ -144,15 +163,44 @@ describe("buildTextFragment", () => {
 });
 
 describe("buildAllOutputs", () => {
-  it("bundles the HTML fragment and every given channel's text, keyed by channel id", () => {
-    const facebook: OutputChannel = { id: 1, name: "Facebook", pattern: "{artists} ({album})" };
-    const threads: OutputChannel = { id: 2, name: "Threads", pattern: "{artists}" };
+  it("bundles the HTML fragment and every given channel's text and headlineText, keyed by channel id", () => {
+    const facebook: OutputChannel = {
+      id: 1,
+      name: "Facebook",
+      pattern: "{artists} ({album})",
+      headlinePattern: "{headline} at episode {episode} having {artists}",
+    };
+    const threads: OutputChannel = {
+      id: 2,
+      name: "Threads",
+      pattern: "{artists}",
+      headlinePattern: "Episode {episode} having {artists}",
+    };
 
-    const result = buildAllOutputs([entry()], [facebook, threads]);
+    const result = buildAllOutputs([entry()], [facebook, threads], episode);
     expect(result.html).toContain("<li>Artist A - Track (Album)</li>");
     expect(Object.keys(result.text).sort()).toEqual([String(facebook.id), String(threads.id)].sort());
     expect(result.text[facebook.id]).toBe("Artist A (Album)");
     expect(result.text[threads.id]).toBe("Artist A");
+    expect(result.headlineText[facebook.id]).toBe(
+      "Crispy variations at episode 821 having Artist A (Album)",
+    );
+    expect(result.headlineText[threads.id]).toBe("Episode 821 having Artist A");
+  });
+});
+
+describe("buildHeadlineFragment", () => {
+  it("substitutes {headline}, {episode} (incl. suffix), and {artists}", () => {
+    const channel: OutputChannel = {
+      id: 1,
+      name: "Facebook",
+      pattern: "{artists}",
+      headlinePattern: "{headline} at episode {episode} having {artists}",
+    };
+    const suffixedEpisode: EpisodeForOutput = { number: 103, suffix: "v1", headline: "Test" };
+    expect(buildHeadlineFragment("Artist A, Artist B", suffixedEpisode, channel)).toBe(
+      "Test at episode 103v1 having Artist A, Artist B",
+    );
   });
 });
 

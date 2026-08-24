@@ -1,6 +1,8 @@
 import { formatContributorList } from "./contributor-format.js";
 import type { ContributorRole } from "./contributor-role.js";
 import type { OutputChannel } from "./entities.js";
+import { formatEpisodeNumber } from "./episode-number.js";
+import type { EpisodeNumber } from "./episode-number.js";
 
 export interface ArtistForOutput {
   name: string;
@@ -25,24 +27,49 @@ export interface PlaylistEntryForOutput {
   track: TrackForOutput;
 }
 
+export interface EpisodeForOutput extends EpisodeNumber {
+  headline: string;
+}
+
 export interface OutputBundle {
   html: string;
   /** Keyed by OutputChannel.id, since channel names are user-defined and not fixed. */
   text: Record<number, string>;
+  /** Full ready-to-post caption per channel (headline pattern, {artists} = that channel's `text`). */
+  headlineText: Record<number, string>;
 }
 
 export function buildAllOutputs(
   entries: PlaylistEntryForOutput[],
   channels: OutputChannel[],
+  episode: EpisodeForOutput,
 ): OutputBundle {
   const sorted = [...entries].sort((a, b) => a.position - b.position);
 
   const text: Record<number, string> = {};
+  const headlineText: Record<number, string> = {};
   for (const channel of channels) {
     text[channel.id] = buildTextFragment(sorted, channel);
+    headlineText[channel.id] = buildHeadlineFragment(text[channel.id], episode, channel);
   }
 
-  return { html: buildHtmlFragment(sorted), text };
+  return { html: buildHtmlFragment(sorted), text, headlineText };
+}
+
+/**
+ * Renders a channel's headline pattern (placeholders {headline}/{episode}/{artists}),
+ * where {artists} is that same channel's already-formatted track-listing text —
+ * the headline pattern just wraps it into the full, ready-to-post caption.
+ */
+export function buildHeadlineFragment(
+  artistsText: string,
+  episode: EpisodeForOutput,
+  channel: OutputChannel,
+): string {
+  return channel.headlinePattern
+    .replaceAll("{headline}", episode.headline)
+    .replaceAll("{episode}", formatEpisodeNumber(episode))
+    .replaceAll("{artists}", artistsText);
 }
 
 export function buildHtmlFragment(entries: PlaylistEntryForOutput[]): string {

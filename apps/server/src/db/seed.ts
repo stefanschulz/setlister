@@ -21,10 +21,18 @@ export async function seed(db: ReturnType<typeof createDb>["db"]) {
   const [facebook, instagram, threads, bluesky] = await db
     .insert(outputChannels)
     .values([
-      { name: "Facebook", pattern: "{artists} ({album})" },
-      { name: "Instagram", pattern: "{artists} ({album})" },
-      { name: "Threads", pattern: "{artists}" },
-      { name: "Bluesky", pattern: "{artists}" },
+      {
+        name: "Facebook",
+        pattern: "{artists} ({album})",
+        headlinePattern: "{headline} at episode {episode} having {artists}",
+      },
+      {
+        name: "Instagram",
+        pattern: "{artists} ({album})",
+        headlinePattern: "{headline} at episode {episode} having {artists}",
+      },
+      { name: "Threads", pattern: "{artists}", headlinePattern: "Episode {episode} having {artists}" },
+      { name: "Bluesky", pattern: "{artists}", headlinePattern: "Episode {episode} having {artists}" },
     ])
     .returning();
 

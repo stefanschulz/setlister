@@ -31,10 +31,10 @@ import {
   useUpdateOutputChannel,
 } from '@/queries/output-channels'
 
-const emptyValues: OutputChannelInput = { name: '', pattern: '' }
+const emptyValues: OutputChannelInput = { name: '', pattern: '', headlinePattern: '' }
 
 function toFormValues(channel: OutputChannel): OutputChannelInput {
-  return { name: channel.name, pattern: channel.pattern }
+  return { name: channel.name, pattern: channel.pattern, headlinePattern: channel.headlinePattern }
 }
 
 function OutputChannelDialog({
@@ -96,6 +96,21 @@ function OutputChannelDialog({
               <p className="text-xs text-destructive">{form.formState.errors.pattern.message}</p>
             )}
           </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="headlinePattern">Schlagzeilen-Muster</Label>
+            <Input
+              id="headlinePattern"
+              placeholder="{headline} at episode {episode} having {artists}"
+              {...form.register('headlinePattern')}
+            />
+            <p className="text-xs text-muted-foreground">
+              Platzhalter: <code>{'{headline}'}</code>, <code>{'{episode}'}</code>, <code>{'{artists}'}</code>{' '}
+              (Künstlerliste im Ausgabe-Muster oben)
+            </p>
+            {form.formState.errors.headlinePattern && (
+              <p className="text-xs text-destructive">{form.formState.errors.headlinePattern.message}</p>
+            )}
+          </div>
           <DialogFooter>
             <Button type="submit" disabled={form.formState.isSubmitting}>
               Speichern
@@ -154,6 +169,7 @@ export default function OutputChannelsPage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Muster</TableHead>
+              <TableHead>Schlagzeilen-Muster</TableHead>
               <TableHead className="text-right">Aktionen</TableHead>
             </TableRow>
           </TableHeader>
@@ -162,6 +178,7 @@ export default function OutputChannelsPage() {
               <TableRow key={channel.id}>
                 <TableCell>{channel.name}</TableCell>
                 <TableCell className="font-mono text-xs">{channel.pattern}</TableCell>
+                <TableCell className="font-mono text-xs">{channel.headlinePattern || '–'}</TableCell>
                 <TableCell className="flex justify-end gap-2 text-right">
                   <Button variant="outline" size="sm" onClick={() => openEdit(channel)}>
                     Bearbeiten
