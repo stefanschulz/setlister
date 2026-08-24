@@ -108,7 +108,7 @@ function App() {
             <SidebarTrigger />
           </header>
 
-          <main className="mx-auto w-full max-w-5xl px-4 py-6">
+          <main className="w-full px-4 py-6">
             <Routes>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/episodes" element={<EpisodesPage />} />
