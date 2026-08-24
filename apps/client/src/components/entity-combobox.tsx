@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils'
 export interface ComboboxItem {
   id: number
   label: string
+  /** Shown as smaller, muted text below the label — e.g. a link, to help disambiguate same-titled entries. */
+  sublabel?: string
 }
 
 /**
@@ -72,14 +74,19 @@ export function EntityCombobox({
               {items.map((item) => (
                 <CommandItem
                   key={item.id}
-                  value={item.label}
+                  value={item.sublabel ? `${item.label} ${item.sublabel}` : item.label}
                   onSelect={() => {
                     onChange(item.id)
                     setOpen(false)
                   }}
                 >
                   <CheckIcon className={cn('size-4', item.id === value ? 'opacity-100' : 'opacity-0')} />
-                  {item.label}
+                  <div className="flex min-w-0 flex-col">
+                    <span className="truncate">{item.label}</span>
+                    {item.sublabel && (
+                      <span className="truncate text-xs text-muted-foreground">{item.sublabel}</span>
+                    )}
+                  </div>
                 </CommandItem>
               ))}
             </CommandGroup>

@@ -181,7 +181,11 @@ export function TrackDialog({
               name="albumId"
               render={({ field }) => (
                 <EntityCombobox
-                  items={(albums ?? []).map((album) => ({ id: album.id, label: album.title }))}
+                  items={(albums ?? []).map((album) => ({
+                    id: album.id,
+                    label: album.title,
+                    sublabel: album.link ?? undefined,
+                  }))}
                   value={field.value || undefined}
                   onChange={field.onChange}
                   placeholder="Album wählen"
