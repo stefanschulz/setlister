@@ -42,6 +42,16 @@ describe("POST /api/episodes — published status derivation", () => {
     expect(res.status).toBe(400);
   });
 
+  it("allows an empty headline/topic for a draft (no airDate)", async () => {
+    const res = await createEpisode({ number: 1, headline: "", topic: "" });
+    expect(res.status).toBe(201);
+  });
+
+  it("requires headline and topic once airDate is set", async () => {
+    const res = await createEpisode({ number: 1, headline: "", topic: "", airDate: "2026-01-15" });
+    expect(res.status).toBe(400);
+  });
+
   it("rejects a duplicate episode number (same implicit empty suffix)", async () => {
     await createEpisode({ number: 1, headline: "H", topic: "T" });
     const res = await createEpisode({ number: 1, headline: "H2", topic: "T2" });
