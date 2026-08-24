@@ -83,11 +83,14 @@ function toFormValues(artist: Artist): ArtistInput {
 
 export function ArtistDialog({
   artist,
+  initialName,
   open,
   onOpenChange,
   onCreated,
 }: {
   artist: Artist | null
+  /** Prefills the name field when creating (ignored when editing). */
+  initialName?: string
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Called with the created/updated artist after a successful submit. */
@@ -103,8 +106,10 @@ export function ArtistDialog({
   const socialReferences = useFieldArray({ control: form.control, name: 'socialReferences' })
 
   useEffect(() => {
-    if (open) form.reset(artist ? toFormValues(artist) : emptyValues)
-  }, [open, artist, form])
+    if (open) {
+      form.reset(artist ? toFormValues(artist) : { ...emptyValues, name: initialName ?? '' })
+    }
+  }, [open, artist, initialName, form])
 
   async function onSubmit(values: ArtistInput) {
     try {

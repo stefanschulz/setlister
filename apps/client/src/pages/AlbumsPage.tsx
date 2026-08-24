@@ -59,11 +59,14 @@ function toFormValues(album: Album): AlbumInput {
 
 export function AlbumDialog({
   album,
+  initialTitle,
   open,
   onOpenChange,
   onCreated,
 }: {
   album: Album | null
+  /** Prefills the title field when creating (ignored when editing). */
+  initialTitle?: string
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Called with the created/updated album after a successful submit. */
@@ -77,8 +80,10 @@ export function AlbumDialog({
   })
 
   useEffect(() => {
-    if (open) form.reset(album ? toFormValues(album) : emptyValues)
-  }, [open, album, form])
+    if (open) {
+      form.reset(album ? toFormValues(album) : { ...emptyValues, title: initialTitle ?? '' })
+    }
+  }, [open, album, initialTitle, form])
 
   async function onSubmit(values: AlbumInput) {
     try {

@@ -41,10 +41,12 @@ export function EntityCombobox({
   placeholder: string
   searchPlaceholder?: string
   emptyText?: string
-  onCreateNew?: () => void
+  /** Called with the current search text, so the caller can prefill its create dialog. */
+  onCreateNew?: (search: string) => void
   createNewLabel?: string
 }) {
   const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
   const selected = items.find((item) => item.id === value)
 
   return (
@@ -63,7 +65,7 @@ export function EntityCombobox({
       </PopoverTrigger>
       <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
@@ -90,7 +92,7 @@ export function EntityCombobox({
                     forceMount
                     onSelect={() => {
                       setOpen(false)
-                      onCreateNew()
+                      onCreateNew(search)
                     }}
                   >
                     <PlusIcon className="size-4" />

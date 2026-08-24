@@ -106,11 +106,14 @@ function withPositions(contributors: TrackFormValues['contributors']): TrackInpu
 
 export function TrackDialog({
   track,
+  initialTitle,
   open,
   onOpenChange,
   onCreated,
 }: {
   track: Track | null
+  /** Prefills the title field when creating (ignored when editing). */
+  initialTitle?: string
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Called with the created/updated track after a successful submit. */
@@ -127,11 +130,15 @@ export function TrackDialog({
   const contributors = useFieldArray({ control: form.control, name: 'contributors' })
 
   const [newArtistIndex, setNewArtistIndex] = useState<number | null>(null)
+  const [newArtistName, setNewArtistName] = useState('')
   const [newAlbumDialogOpen, setNewAlbumDialogOpen] = useState(false)
+  const [newAlbumTitle, setNewAlbumTitle] = useState('')
 
   useEffect(() => {
-    if (open) form.reset(track ? toFormValues(track) : emptyValues)
-  }, [open, track, form])
+    if (open) {
+      form.reset(track ? toFormValues(track) : { ...emptyValues, title: initialTitle ?? '' })
+    }
+  }, [open, track, initialTitle, form])
 
   async function onSubmit(values: TrackFormValues) {
     const input: TrackInput = { ...values, contributors: withPositions(values.contributors) }
@@ -178,7 +185,10 @@ export function TrackDialog({
                   value={field.value || undefined}
                   onChange={field.onChange}
                   placeholder="Album wählen"
-                  onCreateNew={() => setNewAlbumDialogOpen(true)}
+                  onCreateNew={(search) => {
+                    setNewAlbumTitle(search)
+                    setNewAlbumDialogOpen(true)
+                  }}
                   createNewLabel="Neues Album anlegen…"
                 />
               )}
@@ -212,7 +222,10 @@ export function TrackDialog({
                         value={field.value || undefined}
                         onChange={field.onChange}
                         placeholder="Künstler"
-                        onCreateNew={() => setNewArtistIndex(index)}
+                        onCreateNew={(search) => {
+                          setNewArtistName(search)
+                          setNewArtistIndex(index)
+                        }}
                         createNewLabel="Neuen Künstler anlegen…"
                       />
                     )}
@@ -265,6 +278,7 @@ export function TrackDialog({
 
     <AlbumDialog
       album={null}
+      initialTitle={newAlbumTitle}
       open={newAlbumDialogOpen}
       onOpenChange={setNewAlbumDialogOpen}
       onCreated={(newAlbum) => form.setValue('albumId', newAlbum.id)}
@@ -272,6 +286,7 @@ export function TrackDialog({
 
     <ArtistDialog
       artist={null}
+      initialName={newArtistName}
       open={newArtistIndex !== null}
       onOpenChange={(o) => {
         if (!o) setNewArtistIndex(null)

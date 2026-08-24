@@ -132,6 +132,7 @@ function PlaylistContent({
   )
   const [dirty, setDirty] = useState(false)
   const [newTrackDialogOpen, setNewTrackDialogOpen] = useState(false)
+  const [newTrackTitle, setNewTrackTitle] = useState('')
 
   const tracksById = useMemo(() => new Map((tracks ?? []).map((t) => [t.id, t])), [tracks])
 
@@ -264,7 +265,10 @@ function PlaylistContent({
               value={undefined}
               onChange={addTrack}
               placeholder="Track hinzufügen…"
-              onCreateNew={() => setNewTrackDialogOpen(true)}
+              onCreateNew={(search) => {
+                setNewTrackTitle(search)
+                setNewTrackDialogOpen(true)
+              }}
               createNewLabel="Neuen Track anlegen…"
             />
           </div>
@@ -339,6 +343,7 @@ function PlaylistContent({
 
       <TrackDialog
         track={null}
+        initialTitle={newTrackTitle}
         open={newTrackDialogOpen}
         onOpenChange={setNewTrackDialogOpen}
         onCreated={(newTrack) => addTrack(newTrack.id)}
