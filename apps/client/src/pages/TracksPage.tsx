@@ -6,8 +6,8 @@ import {
   trackContributorInputSchema,
 } from '@setlister/shared'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { PlusIcon, TrashIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { PlusIcon, TrashIcon, XIcon } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -40,6 +40,8 @@ import { ApiError } from '@/api/client'
 import { EntityCombobox } from '@/components/entity-combobox'
 import { ListStatus } from '@/components/list-status'
 import { PaginationBar } from '@/components/pagination-bar'
+import { SortableHead, type SortDirection } from '@/components/sortable-table-head'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { usePagination } from '@/hooks/use-pagination'
 import { useAlbums } from '@/queries/albums'
 import { useArtists } from '@/queries/artists'
@@ -51,6 +53,30 @@ const ROLE_LABELS: Record<ContributorRole, string> = {
   ORIGINAL: 'Original',
   FEATURING: 'Feat.',
   REMIX: 'Remix',
+}
+
+type SortColumn = 'title' | 'album' | 'contributors'
+
+interface Row {
+  track: Track
+  contributorsText: string
+}
+
+const COLUMNS: { key: SortColumn; label: string }[] = [
+  { key: 'title', label: 'Titel' },
+  { key: 'album', label: 'Album' },
+  { key: 'contributors', label: 'Künstler' },
+]
+
+function compareRows(a: Row, b: Row, column: SortColumn): number {
+  switch (column) {
+    case 'title':
+      return a.track.title.localeCompare(b.track.title, 'de')
+    case 'album':
+      return a.track.album.title.localeCompare(b.track.album.title, 'de')
+    case 'contributors':
+      return a.contributorsText.localeCompare(b.contributorsText, 'de')
+  }
 }
 
 // The position within a role group is derived from row order, not user input.
@@ -266,10 +292,78 @@ export default function TracksPage() {
   const deleteTrack = useDeleteTrack()
   const [dialogTrack, setDialogTrack] = useState<Track | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const { pageSize, setPageSize, page, setPage, totalPages, pageItems: pageTracks } = usePagination(
-    tracks ?? [],
+
+  const [sortColumn, setSortColumn] = useState<SortColumn>('title')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+
+  const [filterTitle, setFilterTitle] = useState('')
+  const [filterAlbum, setFilterAlbum] = useState('')
+  const [filterContributors, setFilterContributors] = useState('')
+  // Clearing a field (manually or via reset) applies instantly — only new,
+  // non-empty text gets debounced.
+  const debouncedFilterTitle = useDebouncedValue(filterTitle, filterTitle ? 300 : 0)
+  const debouncedFilterAlbum = useDebouncedValue(filterAlbum, filterAlbum ? 300 : 0)
+  const debouncedFilterContributors = useDebouncedValue(filterContributors, filterContributors ? 300 : 0)
+
+  const hasActiveFilters = Boolean(filterTitle || filterAlbum || filterContributors)
+
+  function resetFilters() {
+    setFilterTitle('')
+    setFilterAlbum('')
+    setFilterContributors('')
+  }
+
+  function handleSort(column: SortColumn) {
+    if (column === sortColumn) {
+      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+  }
+
+  const rows: Row[] = useMemo(
+    () =>
+      (tracks ?? []).map((track) => ({
+        track,
+        contributorsText: track.contributors
+          .map((c) => `${c.artist.name} (${ROLE_LABELS[c.role]})`)
+          .join(', '),
+      })),
+    [tracks],
+  )
+
+  const filteredSorted = useMemo(() => {
+    const titleNeedle = debouncedFilterTitle.trim().toLowerCase()
+    const albumNeedle = debouncedFilterAlbum.trim().toLowerCase()
+    const contributorsNeedle = debouncedFilterContributors.trim().toLowerCase()
+
+    const filtered = rows.filter(
+      (row) =>
+        (!titleNeedle || row.track.title.toLowerCase().includes(titleNeedle)) &&
+        (!albumNeedle || row.track.album.title.toLowerCase().includes(albumNeedle)) &&
+        (!contributorsNeedle || row.contributorsText.toLowerCase().includes(contributorsNeedle)),
+    )
+
+    const sign = sortDirection === 'asc' ? 1 : -1
+    return filtered.sort((a, b) => sign * compareRows(a, b, sortColumn))
+  }, [
+    rows,
+    debouncedFilterTitle,
+    debouncedFilterAlbum,
+    debouncedFilterContributors,
+    sortColumn,
+    sortDirection,
+  ])
+
+  const { pageSize, setPageSize, page, setPage, totalPages, pageItems: pageRows } = usePagination(
+    filteredSorted,
     50,
   )
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedFilterTitle, debouncedFilterAlbum, debouncedFilterContributors, setPage])
 
   function openCreate() {
     setDialogTrack(null)
@@ -295,38 +389,80 @@ export default function TracksPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Tracks</h1>
-        <Button onClick={openCreate}>
-          <PlusIcon /> Neu
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={resetFilters} disabled={!hasActiveFilters}>
+            <XIcon /> Filter zurücksetzen
+          </Button>
+          <Button onClick={openCreate}>
+            <PlusIcon /> Neu
+          </Button>
+        </div>
       </div>
 
       <ListStatus
         isLoading={isLoading}
         isError={isError}
         error={error}
-        isEmpty={(tracks?.length ?? 0) === 0}
+        isEmpty={rows.length === 0}
         emptyMessage="Noch keine Tracks angelegt."
       >
         <div className="flex flex-col gap-3">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Titel</TableHead>
-              <TableHead>Album</TableHead>
-              <TableHead>Künstler</TableHead>
+              {COLUMNS.map((col) => (
+                <SortableHead
+                  key={col.key}
+                  column={col.key}
+                  label={col.label}
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                />
+              ))}
               <TableHead className="text-right">Aktionen</TableHead>
+            </TableRow>
+            <TableRow>
+              <TableHead>
+                <Input
+                  value={filterTitle}
+                  onChange={(e) => setFilterTitle(e.target.value)}
+                  placeholder="Filtern…"
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  value={filterAlbum}
+                  onChange={(e) => setFilterAlbum(e.target.value)}
+                  placeholder="Filtern…"
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  value={filterContributors}
+                  onChange={(e) => setFilterContributors(e.target.value)}
+                  placeholder="Filtern…"
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {pageTracks.map((track) => (
+            {pageRows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                  Keine Treffer für die aktuellen Filter.
+                </TableCell>
+              </TableRow>
+            )}
+            {pageRows.map(({ track, contributorsText }) => (
               <TableRow key={track.id}>
                 <TableCell>{track.title}</TableCell>
                 <TableCell>{track.album.title}</TableCell>
-                <TableCell>
-                  {track.contributors
-                    .map((c) => `${c.artist.name} (${ROLE_LABELS[c.role]})`)
-                    .join(', ')}
-                </TableCell>
+                <TableCell>{contributorsText}</TableCell>
                 <TableCell className="flex justify-end gap-2 text-right">
                   <Button variant="outline" size="sm" onClick={() => openEdit(track)}>
                     Bearbeiten
@@ -346,7 +482,7 @@ export default function TracksPage() {
           page={page}
           totalPages={totalPages}
           onPageChange={setPage}
-          totalItems={tracks?.length ?? 0}
+          totalItems={filteredSorted.length}
         />
         </div>
       </ListStatus>
