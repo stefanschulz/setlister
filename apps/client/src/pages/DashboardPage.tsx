@@ -1,4 +1,4 @@
-import { compareEpisodeNumbers, formatEpisodeNumber } from '@setlister/shared'
+import { compareEpisodeNumbers, formatEpisodeNumber, type Episode } from '@setlister/shared'
 import { ListMusicIcon, PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
@@ -44,10 +44,21 @@ export default function DashboardPage() {
   const { data: tracks } = useTracks()
   const { data: channels } = useOutputChannels()
 
+  const [dialogEpisode, setDialogEpisode] = useState<Episode | null>(null)
   const [episodeDialogOpen, setEpisodeDialogOpen] = useState(false)
   const [artistDialogOpen, setArtistDialogOpen] = useState(false)
   const [albumDialogOpen, setAlbumDialogOpen] = useState(false)
   const [trackDialogOpen, setTrackDialogOpen] = useState(false)
+
+  function openCreateEpisode() {
+    setDialogEpisode(null)
+    setEpisodeDialogOpen(true)
+  }
+
+  function openEditEpisode(episode: Episode) {
+    setDialogEpisode(episode)
+    setEpisodeDialogOpen(true)
+  }
 
   const publishedCount = episodes?.filter((e) => e.published).length ?? 0
   const draftEpisodes = (episodes ?? [])
@@ -90,11 +101,14 @@ export default function DashboardPage() {
                   <TableCell>{formatEpisodeNumber(episode)}</TableCell>
                   <TableCell>{episode.headline}</TableCell>
                   <TableCell>{episode.topic}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="flex justify-end gap-2 text-right">
                     <Button variant="outline" size="sm" asChild>
                       <Link to={`/episodes/${episode.id}`}>
                         <ListMusicIcon /> Playlist
                       </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => openEditEpisode(episode)}>
+                      Bearbeiten
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -107,7 +121,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-3">
         <h2 className="font-medium">Schnellzugriff</h2>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setEpisodeDialogOpen(true)}>
+          <Button variant="outline" onClick={openCreateEpisode}>
             <PlusIcon /> Neue Episode
           </Button>
           <Button variant="outline" onClick={() => setArtistDialogOpen(true)}>
@@ -123,10 +137,12 @@ export default function DashboardPage() {
       </div>
 
       <EpisodeDialog
-        episode={null}
+        episode={dialogEpisode}
         open={episodeDialogOpen}
         onOpenChange={setEpisodeDialogOpen}
-        onCreated={(created) => navigate(`/episodes/${created.id}`)}
+        onCreated={(created) => {
+          if (!dialogEpisode) navigate(`/episodes/${created.id}`)
+        }}
       />
       <ArtistDialog artist={null} open={artistDialogOpen} onOpenChange={setArtistDialogOpen} />
       <AlbumDialog album={null} open={albumDialogOpen} onOpenChange={setAlbumDialogOpen} />
