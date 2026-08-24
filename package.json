@@ -1,7 +1,7 @@
 {
   "name": "setlister",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Local Sendungsverwaltung for podcast playlists (artists, albums, tracks, episodes) with HTML/social-media output generation.",
   "workspaces": [
     "apps/*",

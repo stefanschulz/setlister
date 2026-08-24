@@ -108,7 +108,7 @@ function App() {
             <SidebarTrigger />
           </header>
 
-          <main className="w-full px-4 py-6">
+          <main className="w-full flex-1 px-4 py-6">
             <Routes>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/episodes" element={<EpisodesPage />} />
@@ -121,6 +121,10 @@ function App() {
               <Route path="/backup" element={<BackupPage />} />
             </Routes>
           </main>
+
+          <footer className="border-t px-4 py-3 text-center text-xs text-muted-foreground">
+            SetLister v{__APP_VERSION__}
+          </footer>
         </SidebarInset>
 
         <Toaster />
