@@ -1,12 +1,13 @@
 import {
+  compareEpisodeNumbers,
   type Episode,
   type EpisodeInput,
   episodeInputSchema,
   formatEpisodeNumber,
 } from '@setlister/shared'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ListMusicIcon, PlusIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { ListMusicIcon, PlusIcon, XIcon } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
@@ -32,6 +33,8 @@ import {
 import { ApiError } from '@/api/client'
 import { ListStatus } from '@/components/list-status'
 import { PaginationBar } from '@/components/pagination-bar'
+import { SortableHead, type SortDirection } from '@/components/sortable-table-head'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { usePagination } from '@/hooks/use-pagination'
 import { emptyToUndefined } from '@/lib/form'
 import {
@@ -40,6 +43,30 @@ import {
   useEpisodes,
   useUpdateEpisode,
 } from '@/queries/episodes'
+
+type SortColumn = 'number' | 'headline' | 'topic'
+
+interface Row {
+  episode: Episode
+  numberDisplay: string
+}
+
+const COLUMNS: { key: SortColumn; label: string }[] = [
+  { key: 'number', label: 'Nr.' },
+  { key: 'headline', label: 'Schlagzeile' },
+  { key: 'topic', label: 'Thema' },
+]
+
+function compareRows(a: Row, b: Row, column: SortColumn): number {
+  switch (column) {
+    case 'number':
+      return compareEpisodeNumbers(a.episode, b.episode)
+    case 'headline':
+      return a.episode.headline.localeCompare(b.episode.headline, 'de')
+    case 'topic':
+      return a.episode.topic.localeCompare(b.episode.topic, 'de')
+  }
+}
 
 const emptyValues: EpisodeInput = { number: 0, suffix: '', headline: '', topic: '', airDate: undefined }
 
@@ -154,10 +181,69 @@ export default function EpisodesPage() {
   const deleteEpisode = useDeleteEpisode()
   const [dialogEpisode, setDialogEpisode] = useState<Episode | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const { pageSize, setPageSize, page, setPage, totalPages, pageItems: pageEpisodes } = usePagination(
-    episodes ?? [],
+
+  const [sortColumn, setSortColumn] = useState<SortColumn>('number')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+
+  const [filterNumber, setFilterNumber] = useState('')
+  const [filterHeadline, setFilterHeadline] = useState('')
+  const [filterTopic, setFilterTopic] = useState('')
+  // Clearing a field (manually or via reset) applies instantly — only new,
+  // non-empty text gets debounced.
+  const debouncedFilterNumber = useDebouncedValue(filterNumber, filterNumber ? 300 : 0)
+  const debouncedFilterHeadline = useDebouncedValue(filterHeadline, filterHeadline ? 300 : 0)
+  const debouncedFilterTopic = useDebouncedValue(filterTopic, filterTopic ? 300 : 0)
+
+  const hasActiveFilters = Boolean(filterNumber || filterHeadline || filterTopic)
+
+  function resetFilters() {
+    setFilterNumber('')
+    setFilterHeadline('')
+    setFilterTopic('')
+  }
+
+  function handleSort(column: SortColumn) {
+    if (column === sortColumn) {
+      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+  }
+
+  const rows: Row[] = useMemo(
+    () =>
+      (episodes ?? []).map((episode) => ({
+        episode,
+        numberDisplay: formatEpisodeNumber(episode),
+      })),
+    [episodes],
+  )
+
+  const filteredSorted = useMemo(() => {
+    const numberNeedle = debouncedFilterNumber.trim().toLowerCase()
+    const headlineNeedle = debouncedFilterHeadline.trim().toLowerCase()
+    const topicNeedle = debouncedFilterTopic.trim().toLowerCase()
+
+    const filtered = rows.filter(
+      (row) =>
+        (!numberNeedle || row.numberDisplay.toLowerCase().includes(numberNeedle)) &&
+        (!headlineNeedle || row.episode.headline.toLowerCase().includes(headlineNeedle)) &&
+        (!topicNeedle || row.episode.topic.toLowerCase().includes(topicNeedle)),
+    )
+
+    const sign = sortDirection === 'asc' ? 1 : -1
+    return filtered.sort((a, b) => sign * compareRows(a, b, sortColumn))
+  }, [rows, debouncedFilterNumber, debouncedFilterHeadline, debouncedFilterTopic, sortColumn, sortDirection])
+
+  const { pageSize, setPageSize, page, setPage, totalPages, pageItems: pageRows } = usePagination(
+    filteredSorted,
     50,
   )
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedFilterNumber, debouncedFilterHeadline, debouncedFilterTopic, setPage])
 
   function openCreate() {
     setDialogEpisode(null)
@@ -183,33 +269,80 @@ export default function EpisodesPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Episoden</h1>
-        <Button onClick={openCreate}>
-          <PlusIcon /> Neu
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={resetFilters} disabled={!hasActiveFilters}>
+            <XIcon /> Filter zurücksetzen
+          </Button>
+          <Button onClick={openCreate}>
+            <PlusIcon /> Neu
+          </Button>
+        </div>
       </div>
 
       <ListStatus
         isLoading={isLoading}
         isError={isError}
         error={error}
-        isEmpty={(episodes?.length ?? 0) === 0}
+        isEmpty={rows.length === 0}
         emptyMessage="Noch keine Episoden angelegt."
       >
         <div className="flex flex-col gap-3">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nr.</TableHead>
-              <TableHead>Schlagzeile</TableHead>
-              <TableHead>Thema</TableHead>
+              {COLUMNS.map((col) => (
+                <SortableHead
+                  key={col.key}
+                  column={col.key}
+                  label={col.label}
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                />
+              ))}
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Aktionen</TableHead>
             </TableRow>
+            <TableRow>
+              <TableHead>
+                <Input
+                  value={filterNumber}
+                  onChange={(e) => setFilterNumber(e.target.value)}
+                  placeholder="Filtern…"
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  value={filterHeadline}
+                  onChange={(e) => setFilterHeadline(e.target.value)}
+                  placeholder="Filtern…"
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  value={filterTopic}
+                  onChange={(e) => setFilterTopic(e.target.value)}
+                  placeholder="Filtern…"
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead />
+              <TableHead />
+            </TableRow>
           </TableHeader>
           <TableBody>
-            {pageEpisodes.map((episode) => (
+            {pageRows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                  Keine Treffer für die aktuellen Filter.
+                </TableCell>
+              </TableRow>
+            )}
+            {pageRows.map(({ episode, numberDisplay }) => (
               <TableRow key={episode.id}>
-                <TableCell>{formatEpisodeNumber(episode)}</TableCell>
+                <TableCell>{numberDisplay}</TableCell>
                 <TableCell>{episode.headline}</TableCell>
                 <TableCell>{episode.topic}</TableCell>
                 <TableCell>
@@ -241,7 +374,7 @@ export default function EpisodesPage() {
           page={page}
           totalPages={totalPages}
           onPageChange={setPage}
-          totalItems={episodes?.length ?? 0}
+          totalItems={filteredSorted.length}
         />
         </div>
       </ListStatus>

@@ -6,7 +6,7 @@ import {
   formatEpisodeNumber,
 } from '@setlister/shared'
 import type { SetlistEntry } from '@setlister/shared'
-import { ArrowDownIcon, ArrowUpIcon, XIcon } from 'lucide-react'
+import { XIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,13 +20,12 @@ import {
 } from '@/components/ui/table'
 import { ListStatus } from '@/components/list-status'
 import { PaginationBar } from '@/components/pagination-bar'
+import { SortableHead, type SortDirection } from '@/components/sortable-table-head'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { usePagination } from '@/hooks/use-pagination'
 import { useSetlists } from '@/queries/setlists'
-import { cn } from '@/lib/utils'
 
 type SortColumn = 'episode' | 'artist' | 'track' | 'album'
-type SortDirection = 'asc' | 'desc'
 
 interface Row {
   entry: SetlistEntry
@@ -55,42 +54,6 @@ function compareRows(a: Row, b: Row, column: SortColumn): number {
     case 'album':
       return a.entry.track.album.title.localeCompare(b.entry.track.album.title, 'de')
   }
-}
-
-function SortableHead({
-  column,
-  label,
-  sortColumn,
-  sortDirection,
-  onSort,
-}: {
-  column: SortColumn
-  label: string
-  sortColumn: SortColumn
-  sortDirection: SortDirection
-  onSort: (column: SortColumn) => void
-}) {
-  const isActive = column === sortColumn
-  return (
-    <TableHead>
-      <button
-        type="button"
-        onClick={() => onSort(column)}
-        className={cn(
-          'inline-flex items-center gap-1 font-medium hover:text-foreground',
-          !isActive && 'text-muted-foreground',
-        )}
-      >
-        {label}
-        {isActive &&
-          (sortDirection === 'asc' ? (
-            <ArrowUpIcon className="size-3.5" />
-          ) : (
-            <ArrowDownIcon className="size-3.5" />
-          ))}
-      </button>
-    </TableHead>
-  )
 }
 
 export default function SetlistsPage() {
