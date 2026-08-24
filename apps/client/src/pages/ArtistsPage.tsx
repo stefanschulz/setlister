@@ -31,6 +31,8 @@ import {
 } from '@/components/ui/table'
 import { ApiError } from '@/api/client'
 import { ListStatus } from '@/components/list-status'
+import { PaginationBar } from '@/components/pagination-bar'
+import { usePagination } from '@/hooks/use-pagination'
 import { emptyToUndefined } from '@/lib/form'
 import { useArtists, useCreateArtist, useDeleteArtist, useUpdateArtist } from '@/queries/artists'
 import { useOutputChannels } from '@/queries/output-channels'
@@ -189,6 +191,10 @@ export default function ArtistsPage() {
   const deleteArtist = useDeleteArtist()
   const [dialogArtist, setDialogArtist] = useState<Artist | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const { pageSize, setPageSize, page, setPage, totalPages, pageItems: pageArtists } = usePagination(
+    artists ?? [],
+    50,
+  )
 
   function openCreate() {
     setDialogArtist(null)
@@ -226,6 +232,7 @@ export default function ArtistsPage() {
         isEmpty={(artists?.length ?? 0) === 0}
         emptyMessage="Noch keine Künstler angelegt."
       >
+        <div className="flex flex-col gap-3">
         <Table>
           <TableHeader>
             <TableRow>
@@ -237,7 +244,7 @@ export default function ArtistsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {artists?.map((artist) => (
+            {pageArtists.map((artist) => (
               <TableRow key={artist.id}>
                 <TableCell>{artist.name}</TableCell>
                 <TableCell>{artist.realName ?? '–'}</TableCell>
@@ -255,6 +262,16 @@ export default function ArtistsPage() {
             ))}
           </TableBody>
         </Table>
+
+        <PaginationBar
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={artists?.length ?? 0}
+        />
+        </div>
       </ListStatus>
 
       <ArtistDialog artist={dialogArtist} open={dialogOpen} onOpenChange={setDialogOpen} />

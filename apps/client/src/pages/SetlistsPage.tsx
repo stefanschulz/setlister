@@ -6,17 +6,10 @@ import {
   formatEpisodeNumber,
 } from '@setlister/shared'
 import type { SetlistEntry } from '@setlister/shared'
-import { ArrowDownIcon, ArrowUpIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, XIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -26,13 +19,14 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ListStatus } from '@/components/list-status'
+import { PaginationBar } from '@/components/pagination-bar'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
+import { usePagination } from '@/hooks/use-pagination'
 import { useSetlists } from '@/queries/setlists'
 import { cn } from '@/lib/utils'
 
 type SortColumn = 'episode' | 'artist' | 'track' | 'album'
 type SortDirection = 'asc' | 'desc'
-type PageSize = 10 | 50 | 100 | 'all'
 
 interface Row {
   entry: SetlistEntry
@@ -125,9 +119,6 @@ export default function SetlistsPage() {
     setFilterAlbum('')
   }
 
-  const [pageSize, setPageSize] = useState<PageSize>(50)
-  const [page, setPage] = useState(1)
-
   function handleSort(column: SortColumn) {
     if (column === sortColumn) {
       setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -179,14 +170,12 @@ export default function SetlistsPage() {
     sortDirection,
   ])
 
+  const { pageSize, setPageSize, page, setPage, totalPages, pageItems: pageRows } =
+    usePagination(filteredSorted, 50)
+
   useEffect(() => {
     setPage(1)
-  }, [debouncedFilterEpisode, debouncedFilterArtist, debouncedFilterTrack, debouncedFilterAlbum, pageSize])
-
-  const totalPages = pageSize === 'all' ? 1 : Math.max(1, Math.ceil(filteredSorted.length / pageSize))
-  const safePage = Math.min(page, totalPages)
-  const pageRows =
-    pageSize === 'all' ? filteredSorted : filteredSorted.slice((safePage - 1) * pageSize, safePage * pageSize)
+  }, [debouncedFilterEpisode, debouncedFilterArtist, debouncedFilterTrack, debouncedFilterAlbum, setPage])
 
   return (
     <div className="flex flex-col gap-4">
@@ -288,51 +277,14 @@ export default function SetlistsPage() {
             </TableBody>
           </Table>
 
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <span>Einträge pro Seite</span>
-              <Select
-                value={String(pageSize)}
-                onValueChange={(v) => setPageSize(v === 'all' ? 'all' : (Number(v) as PageSize))}
-              >
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                  <SelectItem value="all">Alle</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span>
-                {filteredSorted.length === 0
-                  ? '0 Einträge'
-                  : `Seite ${safePage} von ${totalPages} (${filteredSorted.length} Einträge)`}
-              </span>
-              <div className="flex gap-1">
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={safePage <= 1}
-                  className="rounded-md border p-1 disabled:opacity-40"
-                >
-                  <ChevronLeftIcon className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={safePage >= totalPages}
-                  className="rounded-md border p-1 disabled:opacity-40"
-                >
-                  <ChevronRightIcon className="size-4" />
-                </button>
-              </div>
-            </div>
-          </div>
+          <PaginationBar
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            totalItems={filteredSorted.length}
+          />
         </div>
       </ListStatus>
     </div>

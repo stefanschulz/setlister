@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/table'
 import { ApiError } from '@/api/client'
 import { ListStatus } from '@/components/list-status'
+import { PaginationBar } from '@/components/pagination-bar'
+import { usePagination } from '@/hooks/use-pagination'
 import { emptyToUndefined } from '@/lib/form'
 import { useAlbums, useCreateAlbum, useDeleteAlbum, useUpdateAlbum } from '@/queries/albums'
 
@@ -110,6 +112,10 @@ export default function AlbumsPage() {
   const deleteAlbum = useDeleteAlbum()
   const [dialogAlbum, setDialogAlbum] = useState<Album | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const { pageSize, setPageSize, page, setPage, totalPages, pageItems: pageAlbums } = usePagination(
+    albums ?? [],
+    50,
+  )
 
   function openCreate() {
     setDialogAlbum(null)
@@ -147,6 +153,7 @@ export default function AlbumsPage() {
         isEmpty={(albums?.length ?? 0) === 0}
         emptyMessage="Noch keine Alben angelegt."
       >
+        <div className="flex flex-col gap-3">
         <Table>
           <TableHeader>
             <TableRow>
@@ -156,7 +163,7 @@ export default function AlbumsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {albums?.map((album) => (
+            {pageAlbums.map((album) => (
               <TableRow key={album.id}>
                 <TableCell>{album.title}</TableCell>
                 <TableCell>{album.link ?? '–'}</TableCell>
@@ -172,6 +179,16 @@ export default function AlbumsPage() {
             ))}
           </TableBody>
         </Table>
+
+        <PaginationBar
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={albums?.length ?? 0}
+        />
+        </div>
       </ListStatus>
 
       <AlbumDialog album={dialogAlbum} open={dialogOpen} onOpenChange={setDialogOpen} />

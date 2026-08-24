@@ -39,6 +39,8 @@ import {
 import { ApiError } from '@/api/client'
 import { EntityCombobox } from '@/components/entity-combobox'
 import { ListStatus } from '@/components/list-status'
+import { PaginationBar } from '@/components/pagination-bar'
+import { usePagination } from '@/hooks/use-pagination'
 import { useAlbums } from '@/queries/albums'
 import { useArtists } from '@/queries/artists'
 import { useCreateTrack, useDeleteTrack, useTracks, useUpdateTrack } from '@/queries/tracks'
@@ -264,6 +266,10 @@ export default function TracksPage() {
   const deleteTrack = useDeleteTrack()
   const [dialogTrack, setDialogTrack] = useState<Track | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const { pageSize, setPageSize, page, setPage, totalPages, pageItems: pageTracks } = usePagination(
+    tracks ?? [],
+    50,
+  )
 
   function openCreate() {
     setDialogTrack(null)
@@ -301,6 +307,7 @@ export default function TracksPage() {
         isEmpty={(tracks?.length ?? 0) === 0}
         emptyMessage="Noch keine Tracks angelegt."
       >
+        <div className="flex flex-col gap-3">
         <Table>
           <TableHeader>
             <TableRow>
@@ -311,7 +318,7 @@ export default function TracksPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tracks?.map((track) => (
+            {pageTracks.map((track) => (
               <TableRow key={track.id}>
                 <TableCell>{track.title}</TableCell>
                 <TableCell>{track.album.title}</TableCell>
@@ -332,6 +339,16 @@ export default function TracksPage() {
             ))}
           </TableBody>
         </Table>
+
+        <PaginationBar
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={tracks?.length ?? 0}
+        />
+        </div>
       </ListStatus>
 
       <TrackDialog track={dialogTrack} open={dialogOpen} onOpenChange={setDialogOpen} />

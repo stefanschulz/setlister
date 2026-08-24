@@ -31,6 +31,8 @@ import {
 } from '@/components/ui/table'
 import { ApiError } from '@/api/client'
 import { ListStatus } from '@/components/list-status'
+import { PaginationBar } from '@/components/pagination-bar'
+import { usePagination } from '@/hooks/use-pagination'
 import { emptyToUndefined } from '@/lib/form'
 import {
   useCreateEpisode,
@@ -152,6 +154,10 @@ export default function EpisodesPage() {
   const deleteEpisode = useDeleteEpisode()
   const [dialogEpisode, setDialogEpisode] = useState<Episode | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const { pageSize, setPageSize, page, setPage, totalPages, pageItems: pageEpisodes } = usePagination(
+    episodes ?? [],
+    50,
+  )
 
   function openCreate() {
     setDialogEpisode(null)
@@ -189,6 +195,7 @@ export default function EpisodesPage() {
         isEmpty={(episodes?.length ?? 0) === 0}
         emptyMessage="Noch keine Episoden angelegt."
       >
+        <div className="flex flex-col gap-3">
         <Table>
           <TableHeader>
             <TableRow>
@@ -200,7 +207,7 @@ export default function EpisodesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {episodes?.map((episode) => (
+            {pageEpisodes.map((episode) => (
               <TableRow key={episode.id}>
                 <TableCell>{formatEpisodeNumber(episode)}</TableCell>
                 <TableCell>{episode.headline}</TableCell>
@@ -227,6 +234,16 @@ export default function EpisodesPage() {
             ))}
           </TableBody>
         </Table>
+
+        <PaginationBar
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={episodes?.length ?? 0}
+        />
+        </div>
       </ListStatus>
 
       <EpisodeDialog episode={dialogEpisode} open={dialogOpen} onOpenChange={setDialogOpen} />
