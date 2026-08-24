@@ -2,6 +2,8 @@
 
 Simple management tool for playlists or setlists, e.g., for podcast management.
 
+Built for single-user, local/self-hosted use: there's no login or multi-user access control, so anyone who can reach the running instance has full access.
+
 See [docs/konzept.md](docs/konzept.md) for the full requirements, data model, and architecture concept.
 
 ## Project layout
@@ -39,6 +41,8 @@ npm test
 ```
 
 ## Running with Docker
+
+Requires [Docker](https://docs.docker.com/get-docker/) with Compose (included in current Docker Desktop installs). [Podman](https://podman.io/) works too via `podman compose` — the Dockerfile and compose file use nothing Docker-Desktop-specific.
 
 Builds both apps and serves the whole thing (API + frontend) from a single container, with the SQLite database persisted in a named volume across restarts:
 
