@@ -183,7 +183,7 @@ export default function EpisodesPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
 
   const [sortColumn, setSortColumn] = useState<SortColumn>('number')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
   const [filterNumber, setFilterNumber] = useState('')
   const [filterHeadline, setFilterHeadline] = useState('')
