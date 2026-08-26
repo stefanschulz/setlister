@@ -305,10 +305,16 @@ function PlaylistContent({
         <div className="flex flex-col gap-3 md:sticky md:top-6 md:self-start">
           <h2 className="font-medium">Vorschau</h2>
           <Tabs defaultValue="html">
-            <TabsList>
-              <TabsTrigger value="html">HTML</TabsTrigger>
+            <TabsList className="h-auto flex-wrap justify-start gap-2 group-data-[orientation=horizontal]/tabs:h-auto">
+              <TabsTrigger value="html" className="flex-none rounded-full px-3">
+                HTML
+              </TabsTrigger>
               {channels?.map((channel) => (
-                <TabsTrigger key={channel.id} value={String(channel.id)}>
+                <TabsTrigger
+                  key={channel.id}
+                  value={String(channel.id)}
+                  className="flex-none rounded-full px-3"
+                >
                   {channel.name}
                 </TabsTrigger>
               ))}
