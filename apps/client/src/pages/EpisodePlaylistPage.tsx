@@ -17,11 +17,18 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { CopyIcon, GripVerticalIcon, TrashIcon } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useBlocker, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ApiError } from '@/api/client'
 import { EntityCombobox } from '@/components/entity-combobox'
@@ -184,15 +191,36 @@ function PlaylistContent({
     setDirty(true)
   }
 
-  async function handleSave() {
+  async function handleSave(): Promise<boolean> {
     try {
       await setPlaylist.mutateAsync(entries.map((e) => e.trackId))
       toast.success('Playlist gespeichert')
       setDirty(false)
+      return true
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Unbekannter Fehler')
+      return false
     }
   }
+
+  // Guards in-app navigation (sidebar, "← Episoden") while unsaved changes exist.
+  const blocker = useBlocker(dirty)
+
+  async function handleSaveAndProceed() {
+    if (await handleSave()) blocker.proceed?.()
+  }
+
+  // Guards hard browser-level navigation (reload, close tab, typed URL) — the
+  // browser only allows a native "leave site?" prompt here, no custom dialog.
+  useEffect(() => {
+    if (!dirty) return
+    function handler(e: BeforeUnloadEvent) {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [dirty])
 
   return (
     <div className="flex flex-col gap-6">
@@ -359,6 +387,33 @@ function PlaylistContent({
         onOpenChange={setNewTrackDialogOpen}
         onCreated={(newTrack) => addTrack(newTrack.id)}
       />
+
+      <Dialog
+        open={blocker.state === 'blocked'}
+        onOpenChange={(open) => {
+          if (!open) blocker.reset?.()
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ungespeicherte Änderungen</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Die Playlist wurde geändert, aber noch nicht gespeichert. Was möchtest du tun?
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => blocker.reset?.()}>
+              Abbrechen
+            </Button>
+            <Button variant="outline" onClick={() => blocker.proceed?.()}>
+              Verwerfen
+            </Button>
+            <Button onClick={handleSaveAndProceed} disabled={setPlaylist.isPending}>
+              Speichern
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

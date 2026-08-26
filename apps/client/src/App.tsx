@@ -8,7 +8,7 @@ import {
   TableIcon,
   UsersIcon,
 } from 'lucide-react'
-import { Link, Route, Routes, useLocation } from 'react-router'
+import { Link, Outlet, useLocation } from 'react-router'
 import { Logo } from '@/components/Logo'
 import { Toaster } from '@/components/ui/sonner'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -26,15 +26,6 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar'
-import DashboardPage from '@/pages/DashboardPage'
-import EpisodesPage from '@/pages/EpisodesPage'
-import EpisodePlaylistPage from '@/pages/EpisodePlaylistPage'
-import ArtistsPage from '@/pages/ArtistsPage'
-import AlbumsPage from '@/pages/AlbumsPage'
-import TracksPage from '@/pages/TracksPage'
-import OutputChannelsPage from '@/pages/OutputChannelsPage'
-import SetlistsPage from '@/pages/SetlistsPage'
-import BackupPage from '@/pages/BackupPage'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboardIcon },
@@ -109,17 +100,7 @@ function App() {
           </header>
 
           <main className="w-full flex-1 px-4 py-6">
-            <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/episodes" element={<EpisodesPage />} />
-              <Route path="/episodes/:id" element={<EpisodePlaylistPage />} />
-              <Route path="/setlists" element={<SetlistsPage />} />
-              <Route path="/artists" element={<ArtistsPage />} />
-              <Route path="/albums" element={<AlbumsPage />} />
-              <Route path="/tracks" element={<TracksPage />} />
-              <Route path="/output-channels" element={<OutputChannelsPage />} />
-              <Route path="/backup" element={<BackupPage />} />
-            </Routes>
+            <Outlet />
           </main>
 
           <footer className="border-t px-4 py-3 text-center text-xs text-muted-foreground">
