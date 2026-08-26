@@ -291,15 +291,26 @@ function PlaylistContent({
                 className="rounded-md border p-3 text-sm"
                 dangerouslySetInnerHTML={{ __html: preview.html }}
               />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="self-start"
-                onClick={() => copyToClipboard(preview.html, 'HTML')}
-              >
-                <CopyIcon /> HTML kopieren
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => copyToClipboard(preview.html, 'HTML')}
+                >
+                  <CopyIcon /> HTML kopieren
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => copyToClipboard(preview.plainText, 'Text')}
+                >
+                  <CopyIcon /> Als Text kopieren
+                </Button>
+              </div>
             </TabsContent>
 
             {channels?.map((channel) => (

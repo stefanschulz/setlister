@@ -6,6 +6,7 @@ import {
   buildHeadlineFragment,
   buildHtmlFragment,
   buildLinkedHtml,
+  buildPlainTextFragment,
   buildTextFragment,
   type EpisodeForOutput,
   type PlaylistEntryForOutput,
@@ -97,6 +98,31 @@ describe("buildHtmlFragment", () => {
   });
 });
 
+describe("buildPlainTextFragment", () => {
+  it("renders the same <Künstler> - <Track> (<Album>) listing as HTML, but as plain lines with no tags/links", () => {
+    const text = buildPlainTextFragment([entry()]);
+    expect(text).toBe("Artist A - Track (Album)");
+  });
+
+  it("joins multiple entries with newlines, respecting position order", () => {
+    const text = buildPlainTextFragment([entry({ title: "Second" }, 1), entry({ title: "First" }, 0)]);
+    expect(text).toBe("Artist A - First (Album)\nArtist A - Second (Album)");
+  });
+
+  it("never includes a link even when the artist/album has one", () => {
+    const text = buildPlainTextFragment([
+      entry({
+        album: { title: "Album", link: "https://label.example" },
+        contributors: [
+          { role: "ORIGINAL", position: 0, artist: { name: "Artist A", websiteUrl: "https://a.example", socialReferences: [] } },
+        ],
+      }),
+    ]);
+    expect(text).toBe("Artist A - Track (Album)");
+    expect(text).not.toContain("http");
+  });
+});
+
 describe("buildTextFragment", () => {
   const facebook: OutputChannel = {
     id: 1,
@@ -179,6 +205,7 @@ describe("buildAllOutputs", () => {
 
     const result = buildAllOutputs([entry()], [facebook, threads], episode);
     expect(result.html).toContain("<li>Artist A - Track (Album)</li>");
+    expect(result.plainText).toBe("Artist A - Track (Album)");
     expect(Object.keys(result.text).sort()).toEqual([String(facebook.id), String(threads.id)].sort());
     expect(result.text[facebook.id]).toBe("Artist A (Album)");
     expect(result.text[threads.id]).toBe("Artist A");

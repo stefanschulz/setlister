@@ -33,6 +33,8 @@ export interface EpisodeForOutput extends EpisodeNumber {
 
 export interface OutputBundle {
   html: string;
+  /** Same listing as `html`, but plain text (no tags, no links). */
+  plainText: string;
   /** Keyed by OutputChannel.id, since channel names are user-defined and not fixed. */
   text: Record<number, string>;
   /** Full ready-to-post caption per channel (headline pattern, {artists} = that channel's `text`). */
@@ -53,7 +55,21 @@ export function buildAllOutputs(
     headlineText[channel.id] = buildHeadlineFragment(text[channel.id], episode, channel);
   }
 
-  return { html: buildHtmlFragment(sorted), text, headlineText };
+  return { html: buildHtmlFragment(sorted), plainText: buildPlainTextFragment(sorted), text, headlineText };
+}
+
+/** Same one-line-per-track listing as `buildHtmlFragment`, but plain text (no tags, no links). */
+export function buildPlainTextFragment(entries: PlaylistEntryForOutput[]): string {
+  const sorted = [...entries].sort((a, b) => a.position - b.position);
+
+  const lines = sorted.map(({ track }) => {
+    const contributors = formatContributorList(
+      track.contributors.map((c) => ({ name: c.artist.name, role: c.role, position: c.position })),
+    );
+    return `${contributors} - ${track.title} (${track.album.title})`;
+  });
+
+  return lines.join("\n");
 }
 
 /**
