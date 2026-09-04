@@ -20,7 +20,12 @@ export function useUpdateArtist() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, input }: { id: number; input: ArtistInput }) => api.put<Artist>(`/artists/${id}`, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KEY });
+      // Tracks embed each contributor's full Artist (incl. socialReferences),
+      // so the playlist page's "no social links" styling needs this too.
+      queryClient.invalidateQueries({ queryKey: ["tracks"] });
+    },
   });
 }
 

@@ -1,7 +1,8 @@
 import {
   buildAllOutputs,
-  formatContributorList,
   formatEpisodeNumber,
+  type Artist,
+  type ContributorRole,
   type EpisodeDetail,
   type OutputChannel,
   type PlaylistEntryForOutput,
@@ -17,7 +18,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { CopyIcon, GripVerticalIcon, TrashIcon } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useBlocker, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -35,6 +36,7 @@ import { EntityCombobox } from '@/components/entity-combobox'
 import { useEpisode, useSetPlaylist } from '@/queries/episodes'
 import { useOutputChannels } from '@/queries/output-channels'
 import { useTracks } from '@/queries/tracks'
+import { ArtistDialog } from './ArtistsPage'
 import { TrackDialog } from './TracksPage'
 
 interface LocalEntry {
@@ -49,14 +51,69 @@ function copyToClipboard(text: string, label: string) {
     .catch(() => toast.error('Kopieren fehlgeschlagen'))
 }
 
+/**
+ * Renders a track's contributors the same way formatContributorList (see
+ * packages/shared/src/contributor-format.ts) joins them as text — "A, B & C",
+ * "A feat. B", "A vs B" etc. — but as individual React nodes so a contributor
+ * without any social-media reference can be rendered as a clickable link
+ * instead of plain text.
+ */
+function renderContributors(
+  contributors: Track['contributors'],
+  onEditArtist: (artist: Artist) => void,
+): ReactNode[] {
+  const byRole = (role: ContributorRole) =>
+    contributors.filter((c) => c.role === role).sort((a, b) => a.position - b.position)
+
+  const nameNode = (c: Track['contributors'][number]) =>
+    c.artist.socialReferences.length === 0 ? (
+      <button
+        key={c.id}
+        type="button"
+        className="text-amber-700 underline-offset-2 hover:underline dark:text-amber-400"
+        title="Keine Social-Links hinterlegt – zum Bearbeiten klicken"
+        onClick={(e) => {
+          e.stopPropagation()
+          onEditArtist(c.artist)
+        }}
+      >
+        {c.artist.name}
+      </button>
+    ) : (
+      <span key={c.id}>{c.artist.name}</span>
+    )
+
+  const joinGroup = (group: ReturnType<typeof byRole>): ReactNode[] =>
+    group.flatMap((c, i) => {
+      if (i === 0) return [nameNode(c)]
+      const sep = i === group.length - 1 ? ' & ' : ', '
+      return [<span key={`sep-${c.id}`}>{sep}</span>, nameNode(c)]
+    })
+
+  const original = joinGroup(byRole('ORIGINAL'))
+  const featuring = joinGroup(byRole('FEATURING'))
+  const remix = joinGroup(byRole('REMIX'))
+
+  let nodes = original
+  if (featuring.length > 0) {
+    nodes = nodes.length > 0 ? [...nodes, ' feat. ', ...featuring] : featuring
+  }
+  if (remix.length > 0) {
+    nodes = nodes.length > 0 ? [...nodes, ' vs ', ...remix] : remix
+  }
+  return nodes
+}
+
 function SortablePlaylistRow({
   entry,
-  title,
+  contributors,
+  trackTitle,
   subtitle,
   onRemove,
 }: {
   entry: LocalEntry
-  title: string
+  contributors: ReactNode
+  trackTitle: string
   subtitle: string
   onRemove: () => void
 }) {
@@ -80,7 +137,9 @@ function SortablePlaylistRow({
         <GripVerticalIcon className="size-4" />
       </button>
       <div className="min-w-0 flex-1 text-sm">
-        <span className="font-medium">{title}</span>{' '}
+        <span className="font-medium">
+          {contributors} - {trackTitle}
+        </span>{' '}
         <span className="text-muted-foreground">{subtitle}</span>
       </div>
       <Button type="button" variant="ghost" size="icon-sm" onClick={onRemove}>
@@ -140,6 +199,13 @@ function PlaylistContent({
   const [dirty, setDirty] = useState(false)
   const [newTrackDialogOpen, setNewTrackDialogOpen] = useState(false)
   const [newTrackTitle, setNewTrackTitle] = useState('')
+  const [editArtist, setEditArtist] = useState<Artist | null>(null)
+  const [editArtistDialogOpen, setEditArtistDialogOpen] = useState(false)
+
+  function openArtistEdit(artist: Artist) {
+    setEditArtist(artist)
+    setEditArtistDialogOpen(true)
+  }
 
   const tracksById = useMemo(() => new Map((tracks ?? []).map((t) => [t.id, t])), [tracks])
 
@@ -257,18 +323,12 @@ function PlaylistContent({
                 {entries.map((entry) => {
                   const track = tracksById.get(entry.trackId)
                   if (!track) return null
-                  const contributors = formatContributorList(
-                    track.contributors.map((c) => ({
-                      name: c.artist.name,
-                      role: c.role,
-                      position: c.position,
-                    })),
-                  )
                   return (
                     <SortablePlaylistRow
                       key={entry.localId}
                       entry={entry}
-                      title={`${contributors} - ${track.title}`}
+                      contributors={renderContributors(track.contributors, openArtistEdit)}
+                      trackTitle={track.title}
                       subtitle={`(${track.album.title})`}
                       onRemove={() => removeEntry(entry.localId)}
                     />
@@ -393,6 +453,8 @@ function PlaylistContent({
         onOpenChange={setNewTrackDialogOpen}
         onCreated={(newTrack) => addTrack(newTrack.id)}
       />
+
+      <ArtistDialog artist={editArtist} open={editArtistDialogOpen} onOpenChange={setEditArtistDialogOpen} />
 
       <Dialog
         open={blocker.state === 'blocked'}
