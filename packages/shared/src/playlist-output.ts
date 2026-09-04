@@ -124,6 +124,12 @@ export function buildLinkedHtml(text: string, url: string | null): string {
  * Renders a channel's own pattern (placeholders {artists}/{track}/{album})
  * for each playlist entry and joins them with ", " — the pattern itself now
  * carries what used to be a hardcoded "with/without album" choice.
+ *
+ * A pattern that omits a placeholder (e.g. "{artists}" without "{track}")
+ * can render the same text for multiple distinct playlist entries — the
+ * same artist twice, or the same artist/album combination from different
+ * tracks. Those duplicates are filtered out (first occurrence wins) since
+ * repeating the identical rendered text serves no purpose in the post.
  */
 export function buildTextFragment(entries: PlaylistEntryForOutput[], channel: OutputChannel): string {
   const sorted = [...entries].sort((a, b) => a.position - b.position);
@@ -143,7 +149,7 @@ export function buildTextFragment(entries: PlaylistEntryForOutput[], channel: Ou
     });
   });
 
-  return parts.join(", ");
+  return [...new Set(parts)].join(", ");
 }
 
 function referenceNameForChannel(artist: ArtistForOutput, channelId: number): string {

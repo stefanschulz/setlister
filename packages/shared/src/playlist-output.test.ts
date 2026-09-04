@@ -183,8 +183,29 @@ describe("buildTextFragment", () => {
   });
 
   it("joins multiple playlist entries with a comma", () => {
+    const entries = [
+      entry({ title: "One", contributors: [{ role: "ORIGINAL", position: 0, artist: artistWithRefs }] }, 0),
+      entry({ title: "Two" }, 1),
+    ];
+    expect(buildTextFragment(entries, bluesky)).toBe("@a.bsky, Artist A");
+  });
+
+  it("dedupes entries that render identically for a pattern without {track} (e.g. same artist twice)", () => {
     const entries = [entry({ title: "One" }, 0), entry({ title: "Two" }, 1)];
-    expect(buildTextFragment(entries, bluesky)).toBe("Artist A, Artist A");
+    expect(buildTextFragment(entries, bluesky)).toBe("Artist A");
+  });
+
+  it("dedupes entries that render identically for a pattern without {track} (e.g. same artist/album from different tracks)", () => {
+    const entries = [entry({ title: "One" }, 0), entry({ title: "Two" }, 1)];
+    expect(buildTextFragment(entries, facebook)).toBe("Artist A (Album)");
+  });
+
+  it("keeps entries that render differently (different album)", () => {
+    const entries = [
+      entry({ title: "One" }, 0),
+      entry({ title: "Two", album: { title: "Other Album", link: null } }, 1),
+    ];
+    expect(buildTextFragment(entries, facebook)).toBe("Artist A (Album), Artist A (Other Album)");
   });
 });
 
