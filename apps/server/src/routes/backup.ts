@@ -8,6 +8,7 @@ import {
   CONTRIBUTOR_ROLES,
   episodePlaylistEntries,
   episodes,
+  labels,
   outputChannels,
   tracks,
   trackContributors,
@@ -36,6 +37,18 @@ const backupSchema = z.object({
       z.object({ id: z.number(), artistId: z.number(), channelId: z.number(), referenceName: z.string() }),
     ),
     albums: z.array(z.object({ id: z.number(), title: z.string(), link: z.string().nullable() })),
+    // Optional/defaulted so backups made before labels existed still restore.
+    labels: z
+      .array(
+        z.object({
+          id: z.number(),
+          name: z.string(),
+          link: z.string().nullable(),
+          facebookReferenceName: z.string().nullable(),
+        }),
+      )
+      .optional()
+      .default([]),
     tracks: z.array(z.object({ id: z.number(), title: z.string(), albumId: z.number() })),
     trackContributors: z.array(
       z.object({
@@ -84,6 +97,7 @@ export function createBackupRouter(db: Db) {
       outputChannels: await db.select().from(outputChannels),
       artistSocialReferences: await db.select().from(artistSocialReferences),
       albums: await db.select().from(albums),
+      labels: await db.select().from(labels),
       tracks: await db.select().from(tracks),
       trackContributors: await db.select().from(trackContributors),
       episodes: await db.select().from(episodes),
@@ -113,11 +127,13 @@ export function createBackupRouter(db: Db) {
       tx.delete(albums).run();
       tx.delete(artists).run();
       tx.delete(outputChannels).run();
+      tx.delete(labels).run();
 
       // Insert parents before children, preserving original ids.
       insertChunked(tx, outputChannels, data.outputChannels);
       insertChunked(tx, artists, data.artists);
       insertChunked(tx, albums, data.albums);
+      insertChunked(tx, labels, data.labels);
       insertChunked(tx, episodes, data.episodes);
       insertChunked(tx, tracks, data.tracks);
       insertChunked(tx, artistSocialReferences, data.artistSocialReferences);

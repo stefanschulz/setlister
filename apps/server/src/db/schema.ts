@@ -40,6 +40,13 @@ export const albums = sqliteTable("albums", {
   link: text("link"),
 });
 
+export const labels = sqliteTable("labels", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  link: text("link"),
+  facebookReferenceName: text("facebook_reference_name"),
+});
+
 export const tracks = sqliteTable("tracks", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   title: text("title").notNull(),

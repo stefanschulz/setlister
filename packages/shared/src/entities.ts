@@ -30,6 +30,13 @@ export interface Album {
   link: string | null;
 }
 
+export interface Label {
+  id: number;
+  name: string;
+  link: string | null;
+  facebookReferenceName: string | null;
+}
+
 export interface TrackContributor {
   id: number;
   role: ContributorRole;

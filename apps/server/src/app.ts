@@ -5,6 +5,7 @@ import { createAlbumsRouter } from "./routes/albums.js";
 import { createArtistsRouter } from "./routes/artists.js";
 import { createBackupRouter } from "./routes/backup.js";
 import { createEpisodesRouter } from "./routes/episodes.js";
+import { createLabelsRouter } from "./routes/labels.js";
 import { createOutputChannelsRouter } from "./routes/output-channels.js";
 import { createSetlistsRouter } from "./routes/setlists.js";
 import { createTracksRouter } from "./routes/tracks.js";
@@ -15,6 +16,7 @@ export function createApp(db: Db) {
   app.get("/api/health", (c) => c.json({ status: "ok" }));
   app.route("/api/artists", createArtistsRouter(db));
   app.route("/api/albums", createAlbumsRouter(db));
+  app.route("/api/labels", createLabelsRouter(db));
   app.route("/api/tracks", createTracksRouter(db));
   app.route("/api/episodes", createEpisodesRouter(db));
   app.route("/api/output-channels", createOutputChannelsRouter(db));

@@ -7,6 +7,7 @@ import {
   artistSocialReferences,
   episodePlaylistEntries,
   episodes,
+  labels,
   outputChannels,
   trackContributors,
   tracks,
@@ -47,6 +48,11 @@ export async function seed(db: ReturnType<typeof createDb>["db"]) {
   await db.insert(artistSocialReferences).values([
     { artistId: artistA.id, channelId: bluesky.id, referenceName: "@artist-a" },
     { artistId: artistA.id, channelId: instagram.id, referenceName: "artist.a.official" },
+  ]);
+
+  await db.insert(labels).values([
+    { name: "Label One", link: "https://label-one.example", facebookReferenceName: "labelone.official" },
+    { name: "Label Two" },
   ]);
 
   const [albumOne] = await db.insert(albums).values({ title: "Album One" }).returning();
