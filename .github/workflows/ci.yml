@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - name: Build every workspace (shared, client, server)
+        run: npm run build
+
+      - name: Run tests (shared, server, client)
+        run: npm test
+
+  docker-smoke-test:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      # docker-compose.yml depends on an external Traefik proxy network
+      # (dev-proxy) that only exists on the maintainer's own machine — it's
+      # irrelevant to whether the image itself builds and serves correctly,
+      # so this builds and runs the plain image directly instead.
+      - name: Build image
+        run: docker build -t setlister:ci .
+
+      - name: Run container
+        run: docker run -d --name setlister-ci -p 3000:3000 setlister:ci
+
+      - name: Wait for the app to become healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/api/health > /dev/null; then
+              echo "App is healthy after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "App did not become healthy within 30s"
+          exit 1
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs setlister-ci
+
+      - name: Clean up
+        if: always()
+        run: docker rm -f setlister-ci
