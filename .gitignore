@@ -3,6 +3,7 @@ dist/
 build/
 *.tsbuildinfo
 *.log
+coverage/
 .env
 .env.local
 data/
