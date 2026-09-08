@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Table,
   TableBody,
@@ -74,7 +75,15 @@ function compareRows(a: Row, b: Row, column: SortColumn): number {
   }
 }
 
-const emptyValues: EpisodeInput = { number: 0, suffix: '', headline: '', topic: '', airDate: undefined }
+const emptyValues: EpisodeInput = {
+  number: 0,
+  suffix: '',
+  headline: '',
+  topic: '',
+  airDate: undefined,
+  teaser: undefined,
+  script: undefined,
+}
 
 function toFormValues(episode: Episode): EpisodeInput {
   return {
@@ -83,6 +92,8 @@ function toFormValues(episode: Episode): EpisodeInput {
     headline: episode.headline,
     topic: episode.topic,
     airDate: episode.airDate ?? undefined,
+    teaser: episode.teaser ?? undefined,
+    script: episode.script ?? undefined,
   }
 }
 
@@ -172,6 +183,24 @@ export function EpisodeDialog({
               id="airDate"
               type="date"
               {...form.register('airDate', { setValueAs: emptyToUndefined })}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="teaser">Teaser</Label>
+            <Textarea
+              id="teaser"
+              rows={5}
+              className="field-sizing-fixed"
+              {...form.register('teaser', { setValueAs: emptyToUndefined })}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="script">Skript</Label>
+            <Textarea
+              id="script"
+              rows={20}
+              className="field-sizing-fixed"
+              {...form.register('script', { setValueAs: emptyToUndefined })}
             />
           </div>
           <DialogFooter>

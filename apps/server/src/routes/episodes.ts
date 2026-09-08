@@ -63,7 +63,13 @@ export function createEpisodesRouter(db: Db) {
 
     const [created] = await db
       .insert(episodes)
-      .values({ ...parsed.data, suffix, airDate: parsed.data.airDate ?? null })
+      .values({
+        ...parsed.data,
+        suffix,
+        airDate: parsed.data.airDate ?? null,
+        teaser: parsed.data.teaser ?? null,
+        script: parsed.data.script ?? null,
+      })
       .returning();
     return c.json(withPublishedFlag(created), 201);
   });
@@ -88,7 +94,13 @@ export function createEpisodesRouter(db: Db) {
 
     const [updated] = await db
       .update(episodes)
-      .set({ ...parsed.data, suffix, airDate: parsed.data.airDate ?? null })
+      .set({
+        ...parsed.data,
+        suffix,
+        airDate: parsed.data.airDate ?? null,
+        teaser: parsed.data.teaser ?? null,
+        script: parsed.data.script ?? null,
+      })
       .where(eq(episodes.id, id))
       .returning();
     return c.json(withPublishedFlag(updated));
@@ -151,6 +163,8 @@ export function createEpisodesRouter(db: Db) {
         number: existing.number,
         suffix: existing.suffix,
         headline: existing.headline,
+        teaser: existing.teaser,
+        script: existing.script,
       }),
     );
   });

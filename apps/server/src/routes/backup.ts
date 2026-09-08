@@ -75,6 +75,9 @@ const backupSchema = z.object({
         headline: z.string(),
         topic: z.string(),
         airDate: z.string().nullable(),
+        // Optional/defaulted so backups made before these fields existed still restore.
+        teaser: z.string().nullable().optional().default(null),
+        script: z.string().nullable().optional().default(null),
       }),
     ),
     episodePlaylistEntries: z.array(

@@ -82,6 +82,9 @@ export const episodes = sqliteTable("episodes", {
   topic: text("topic").notNull(),
   // ISO date string (YYYY-MM-DD). Null = draft, set = published (see §1.1).
   airDate: text("air_date"),
+  // Free-text notes, both fully optional (unlike headline/topic, never required).
+  teaser: text("teaser"),
+  script: text("script"),
 }, (table) => [unique().on(table.number, table.suffix)]);
 
 export const episodePlaylistEntries = sqliteTable("episode_playlist_entries", {

@@ -74,6 +74,28 @@ describe("POST /api/episodes — published status derivation", () => {
     const res = await createEpisode({ number: 1, headline: "H", topic: "T" });
     expect((await res.json()).suffix).toBe("");
   });
+
+  it("accepts teaser and script, both optional and never required (even with airDate set)", async () => {
+    const res = await createEpisode({
+      number: 1,
+      headline: "H",
+      topic: "T",
+      airDate: "2026-01-15",
+      teaser: "Teaser text",
+      script: "Script text",
+    });
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.teaser).toBe("Teaser text");
+    expect(body.script).toBe("Script text");
+  });
+
+  it("defaults teaser and script to null when omitted", async () => {
+    const res = await createEpisode({ number: 1, headline: "H", topic: "T" });
+    const body = await res.json();
+    expect(body.teaser).toBeNull();
+    expect(body.script).toBeNull();
+  });
 });
 
 describe("GET /api/episodes", () => {
@@ -134,6 +156,22 @@ describe("PUT /api/episodes/:id", () => {
     });
     expect(res.status).toBe(200);
     expect((await res.json()).suffix).toBe("v2");
+  });
+
+  it("clears a previously set teaser/script when omitted", async () => {
+    const created = await (
+      await createEpisode({ number: 1, headline: "H", topic: "T", teaser: "Teaser", script: "Script" })
+    ).json();
+
+    const res = await app.request(`/api/episodes/${created.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ number: 1, headline: "H", topic: "T" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.teaser).toBeNull();
+    expect(body.script).toBeNull();
   });
 });
 

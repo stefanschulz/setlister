@@ -62,6 +62,8 @@ export interface Episode {
   headline: string;
   topic: string;
   airDate: string | null;
+  teaser: string | null;
+  script: string | null;
   published: boolean;
 }
 

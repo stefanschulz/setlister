@@ -50,6 +50,13 @@
       "when": 1788866536158,
       "tag": "0006_known_vector",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1788870211281,
+      "tag": "0007_yellow_solo",
+      "breakpoints": true
     }
   ]
 }

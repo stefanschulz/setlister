@@ -15,6 +15,9 @@ export const episodeInputSchema = z
       .regex(/^\d{4}-\d{2}-\d{2}$/, "airDate must be an ISO date (YYYY-MM-DD)")
       .nullable()
       .optional(),
+    // Free-text notes, both fully optional (unlike headline/topic, never required).
+    teaser: z.string().optional(),
+    script: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (!data.airDate) return;
