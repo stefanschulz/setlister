@@ -5,6 +5,7 @@ import EpisodesPage from '@/pages/EpisodesPage'
 import EpisodePlaylistPage from '@/pages/EpisodePlaylistPage'
 import ArtistsPage from '@/pages/ArtistsPage'
 import AlbumsPage from '@/pages/AlbumsPage'
+import LabelsPage from '@/pages/LabelsPage'
 import TracksPage from '@/pages/TracksPage'
 import OutputChannelsPage from '@/pages/OutputChannelsPage'
 import SetlistsPage from '@/pages/SetlistsPage'
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
       { path: 'setlists', element: <SetlistsPage /> },
       { path: 'artists', element: <ArtistsPage /> },
       { path: 'albums', element: <AlbumsPage /> },
+      { path: 'labels', element: <LabelsPage /> },
       { path: 'tracks', element: <TracksPage /> },
       { path: 'output-channels', element: <OutputChannelsPage /> },
       { path: 'backup', element: <BackupPage /> },
