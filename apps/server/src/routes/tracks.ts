@@ -12,7 +12,7 @@ import {
 import { parseBody, parseIdParam } from "./helpers.js";
 
 const trackWithDetails = {
-  album: true,
+  album: { with: { label: true } },
   // Artist includes socialReferences so the client can compute the M6 live
   // output preview locally, without a separate round trip per channel.
   contributors: { with: { artist: { with: { socialReferences: true } } } },

@@ -11,7 +11,7 @@ export function createSetlistsRouter(db: Db) {
         episode: true,
         track: {
           with: {
-            album: true,
+            album: { with: { label: true } },
             contributors: { with: { artist: { with: { socialReferences: true } } } },
           },
         },

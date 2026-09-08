@@ -21,7 +21,7 @@ async function loadPlaylist(db: Db, episodeId: number): Promise<PlaylistEntryFor
     with: {
       track: {
         with: {
-          album: true,
+          album: { with: { label: true } },
           contributors: { with: { artist: { with: { socialReferences: true } } } },
         },
       },

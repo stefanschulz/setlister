@@ -1,0 +1,1 @@
+ALTER TABLE `albums` ADD `label_id` integer REFERENCES labels(id);

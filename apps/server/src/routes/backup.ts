@@ -36,7 +36,15 @@ const backupSchema = z.object({
     artistSocialReferences: z.array(
       z.object({ id: z.number(), artistId: z.number(), channelId: z.number(), referenceName: z.string() }),
     ),
-    albums: z.array(z.object({ id: z.number(), title: z.string(), link: z.string().nullable() })),
+    albums: z.array(
+      z.object({
+        id: z.number(),
+        title: z.string(),
+        link: z.string().nullable(),
+        // Optional/defaulted so backups made before Album.labelId existed still restore.
+        labelId: z.number().nullable().optional().default(null),
+      }),
+    ),
     // Optional/defaulted so backups made before labels existed still restore.
     labels: z
       .array(
@@ -132,8 +140,8 @@ export function createBackupRouter(db: Db) {
       // Insert parents before children, preserving original ids.
       insertChunked(tx, outputChannels, data.outputChannels);
       insertChunked(tx, artists, data.artists);
-      insertChunked(tx, albums, data.albums);
       insertChunked(tx, labels, data.labels);
+      insertChunked(tx, albums, data.albums);
       insertChunked(tx, episodes, data.episodes);
       insertChunked(tx, tracks, data.tracks);
       insertChunked(tx, artistSocialReferences, data.artistSocialReferences);

@@ -24,17 +24,19 @@ export interface Artist extends ArtistSummary {
   socialReferences: SocialReference[];
 }
 
-export interface Album {
-  id: number;
-  title: string;
-  link: string | null;
-}
-
 export interface Label {
   id: number;
   name: string;
   link: string | null;
   facebookReferenceName: string | null;
+}
+
+export interface Album {
+  id: number;
+  title: string;
+  link: string | null;
+  labelId: number | null;
+  label: Label | null;
 }
 
 export interface TrackContributor {

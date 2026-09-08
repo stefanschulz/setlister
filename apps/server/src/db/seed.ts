@@ -50,15 +50,16 @@ export async function seed(db: ReturnType<typeof createDb>["db"]) {
     { artistId: artistA.id, channelId: instagram.id, referenceName: "artist.a.official" },
   ]);
 
-  await db.insert(labels).values([
-    { name: "Label One", link: "https://label-one.example", facebookReferenceName: "labelone.official" },
-    { name: "Label Two" },
-  ]);
+  const [labelOne] = await db
+    .insert(labels)
+    .values({ name: "Label One", link: "https://label-one.example", facebookReferenceName: "labelone.official" })
+    .returning();
+  await db.insert(labels).values({ name: "Label Two" });
 
   const [albumOne] = await db.insert(albums).values({ title: "Album One" }).returning();
   const [compilation] = await db
     .insert(albums)
-    .values({ title: "Compilation Vol. 1", link: "https://label.example/comp-1" })
+    .values({ title: "Compilation Vol. 1", link: "https://label.example/comp-1", labelId: labelOne.id })
     .returning();
 
   const [introTrack] = await db

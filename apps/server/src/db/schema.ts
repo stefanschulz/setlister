@@ -38,6 +38,8 @@ export const albums = sqliteTable("albums", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   title: text("title").notNull(),
   link: text("link"),
+  // Optional: most existing albums predate the Label entity and have none.
+  labelId: integer("label_id").references(() => labels.id),
 });
 
 export const labels = sqliteTable("labels", {
@@ -114,8 +116,16 @@ export const outputChannelsRelations = relations(outputChannels, ({ many }) => (
   socialReferences: many(artistSocialReferences),
 }));
 
-export const albumsRelations = relations(albums, ({ many }) => ({
+export const albumsRelations = relations(albums, ({ one, many }) => ({
   tracks: many(tracks),
+  label: one(labels, {
+    fields: [albums.labelId],
+    references: [labels.id],
+  }),
+}));
+
+export const labelsRelations = relations(labels, ({ many }) => ({
+  albums: many(albums),
 }));
 
 export const tracksRelations = relations(tracks, ({ one, many }) => ({

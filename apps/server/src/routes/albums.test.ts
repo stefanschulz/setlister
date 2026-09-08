@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../app.js";
 import { createDb, type Db } from "../db/client.js";
 import { runMigrations } from "../db/migrate.js";
-import { tracks } from "../db/schema.js";
+import { labels, tracks } from "../db/schema.js";
 
 let db: Db;
 let app: ReturnType<typeof createApp>;
@@ -35,6 +35,21 @@ describe("POST /api/albums", () => {
 
   it("rejects an invalid link", async () => {
     const res = await createAlbum({ title: "Album One", link: "not-a-url" });
+    expect(res.status).toBe(400);
+  });
+
+  it("creates an album with a label and includes it in the response", async () => {
+    const [label] = await db.insert(labels).values({ name: "Label One" }).returning();
+
+    const res = await createAlbum({ title: "Album One", labelId: label.id });
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.labelId).toBe(label.id);
+    expect(body.label).toMatchObject({ id: label.id, name: "Label One" });
+  });
+
+  it("rejects a non-existent labelId", async () => {
+    const res = await createAlbum({ title: "Album One", labelId: 999 });
     expect(res.status).toBe(400);
   });
 });
@@ -76,6 +91,19 @@ describe("PUT /api/albums/:id", () => {
       body: JSON.stringify({ title: "X" }),
     });
     expect(res.status).toBe(404);
+  });
+
+  it("clears a previously set labelId when omitted", async () => {
+    const [label] = await db.insert(labels).values({ name: "Label One" }).returning();
+    const created = await (await createAlbum({ title: "Album One", labelId: label.id })).json();
+
+    const res = await app.request(`/api/albums/${created.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Album One" }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ labelId: null, label: null });
   });
 });
 

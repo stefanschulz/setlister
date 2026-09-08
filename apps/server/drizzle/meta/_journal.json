@@ -43,6 +43,13 @@
       "when": 1788865082201,
       "tag": "0005_swift_mordo",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1788866536158,
+      "tag": "0006_known_vector",
+      "breakpoints": true
     }
   ]
 }
