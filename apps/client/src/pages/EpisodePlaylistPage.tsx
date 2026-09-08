@@ -438,6 +438,9 @@ function PlaylistContent({
               <TabsTrigger value="html" className="flex-none rounded-full px-3">
                 HTML
               </TabsTrigger>
+              <TabsTrigger value="labels" className="flex-none rounded-full px-3">
+                Labels
+              </TabsTrigger>
               {channels?.map((channel) => (
                 <TabsTrigger
                   key={channel.id}
@@ -474,6 +477,21 @@ function PlaylistContent({
                   <CopyIcon /> Als Text kopieren
                 </Button>
               </div>
+            </TabsContent>
+
+            <TabsContent value="labels" className="flex flex-col gap-2">
+              <p className="rounded-md border p-3 text-sm whitespace-pre-wrap">
+                {preview.labelsText || '–'}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="self-start"
+                onClick={() => copyToClipboard(preview.labelsText, 'Labels')}
+              >
+                <CopyIcon /> Labels kopieren
+              </Button>
             </TabsContent>
 
             {channels?.map((channel) => (

@@ -18,7 +18,11 @@ export interface ContributorForOutput {
 
 export interface TrackForOutput {
   title: string;
-  album: { title: string; link: string | null };
+  album: {
+    title: string;
+    link: string | null;
+    label: { id: number; facebookReferenceName: string | null } | null;
+  };
   contributors: ContributorForOutput[];
 }
 
@@ -39,6 +43,8 @@ export interface OutputBundle {
   text: Record<number, string>;
   /** Full ready-to-post caption per channel (headline pattern, {artists} = that channel's `text`). */
   headlineText: Record<number, string>;
+  /** The playlist's labels' Facebook reference names, "+++"-wrapped and -separated. */
+  labelsText: string;
 }
 
 export function buildAllOutputs(
@@ -55,7 +61,46 @@ export function buildAllOutputs(
     headlineText[channel.id] = buildHeadlineFragment(text[channel.id], episode, channel);
   }
 
-  return { html: buildHtmlFragment(sorted), plainText: buildPlainTextFragment(sorted), text, headlineText };
+  return {
+    html: buildHtmlFragment(sorted),
+    plainText: buildPlainTextFragment(sorted),
+    text,
+    headlineText,
+    labelsText: buildLabelsFragment(sorted),
+  };
+}
+
+/**
+ * Renders the playlist's involved labels' Facebook reference names — one per
+ * distinct label (by id, so same-named labels aren't accidentally merged),
+ * skipping labels with no Facebook reference name set, each "@"-prefixed and
+ * on its own line, led/separated/closed by a "+++" line, e.g.:
+ * ```
+ * +++
+ * @Label A
+ * +++
+ * @Label B
+ * +++
+ * ```
+ * Empty if no track's album has a label with a Facebook reference name.
+ */
+export function buildLabelsFragment(entries: PlaylistEntryForOutput[]): string {
+  const sorted = [...entries].sort((a, b) => a.position - b.position);
+
+  const seen = new Set<number>();
+  const names: string[] = [];
+  for (const { track } of sorted) {
+    const label = track.album.label;
+    if (!label || seen.has(label.id)) continue;
+    seen.add(label.id);
+    if (label.facebookReferenceName) {
+      // "@" is the conventional prefix for a social handle; normalize here so
+      // it doesn't matter whether it was typed in when the label was entered.
+      names.push(label.facebookReferenceName.startsWith("@") ? label.facebookReferenceName : `@${label.facebookReferenceName}`);
+    }
+  }
+
+  return names.length > 0 ? `+++\n${names.join("\n+++\n")}\n+++` : "";
 }
 
 /** Same one-line-per-track listing as `buildHtmlFragment`, but plain text (no tags, no links). */

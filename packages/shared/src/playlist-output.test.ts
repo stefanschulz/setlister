@@ -5,6 +5,7 @@ import {
   buildContributorsHtml,
   buildHeadlineFragment,
   buildHtmlFragment,
+  buildLabelsFragment,
   buildLinkedHtml,
   buildPlainTextFragment,
   buildTextFragment,
@@ -19,7 +20,7 @@ function entry(overrides: Partial<PlaylistEntryForOutput["track"]> = {}, positio
     position,
     track: {
       title: "Track",
-      album: { title: "Album", link: null },
+      album: { title: "Album", link: null, label: null },
       contributors: [
         {
           role: "ORIGINAL",
@@ -234,6 +235,14 @@ describe("buildAllOutputs", () => {
       "Crispy variations at episode 821 having Artist A (Album)",
     );
     expect(result.headlineText[threads.id]).toBe("Episode 821 having Artist A");
+    expect(result.labelsText).toBe("");
+  });
+
+  it("includes labelsText", () => {
+    const entries = [
+      entry({ album: { title: "Album", link: null, label: { id: 1, facebookReferenceName: "label.a" } } }),
+    ];
+    expect(buildAllOutputs(entries, [], episode).labelsText).toBe("+++\n@label.a\n+++");
   });
 });
 
@@ -266,6 +275,73 @@ describe("buildContributorsHtml", () => {
       { role: "ORIGINAL", position: 0, artist: { name: "A & B", websiteUrl: null, socialReferences: [] } },
     ]);
     expect(html).toBe("A &amp; B");
+  });
+});
+
+describe("buildLabelsFragment", () => {
+  it("returns an empty string when no track's album has a label", () => {
+    expect(buildLabelsFragment([entry()])).toBe("");
+  });
+
+  it("returns an empty string when the label has no Facebook reference name", () => {
+    const entries = [entry({ album: { title: "Album", link: null, label: { id: 1, facebookReferenceName: null } } })];
+    expect(buildLabelsFragment(entries)).toBe("");
+  });
+
+  it("wraps a single label's Facebook reference name in +++ lines, @-prefixed", () => {
+    const entries = [
+      entry({ album: { title: "Album", link: null, label: { id: 1, facebookReferenceName: "label.a" } } }),
+    ];
+    expect(buildLabelsFragment(entries)).toBe("+++\n@label.a\n+++");
+  });
+
+  it("doesn't double up the @ if the reference name already has one", () => {
+    const entries = [
+      entry({ album: { title: "Album", link: null, label: { id: 1, facebookReferenceName: "@label.a" } } }),
+    ];
+    expect(buildLabelsFragment(entries)).toBe("+++\n@label.a\n+++");
+  });
+
+  it("separates multiple distinct labels with +++", () => {
+    const entries = [
+      entry(
+        { album: { title: "Album A", link: null, label: { id: 1, facebookReferenceName: "label.a" } } },
+        0,
+      ),
+      entry(
+        { album: { title: "Album B", link: null, label: { id: 2, facebookReferenceName: "label.b" } } },
+        1,
+      ),
+    ];
+    expect(buildLabelsFragment(entries)).toBe("+++\n@label.a\n+++\n@label.b\n+++");
+  });
+
+  it("dedupes the same label (by id) across multiple tracks", () => {
+    const entries = [
+      entry(
+        { title: "Track One", album: { title: "Album A", link: null, label: { id: 1, facebookReferenceName: "label.a" } } },
+        0,
+      ),
+      entry(
+        { title: "Track Two", album: { title: "Album A", link: null, label: { id: 1, facebookReferenceName: "label.a" } } },
+        1,
+      ),
+    ];
+    expect(buildLabelsFragment(entries)).toBe("+++\n@label.a\n+++");
+  });
+
+  it("skips labels without a Facebook reference name but keeps others", () => {
+    const entries = [
+      entry(
+        { album: { title: "Album A", link: null, label: { id: 1, facebookReferenceName: null } } },
+        0,
+      ),
+      entry(
+        { album: { title: "Album B", link: null, label: { id: 2, facebookReferenceName: "label.b" } } },
+        1,
+      ),
+    ];
+    expect(buildLabelsFragment(entries)).toBe("+++\n@label.b\n+++");
   });
 });
 
