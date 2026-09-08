@@ -1,4 +1,4 @@
-import { CheckIcon, ChevronsUpDownIcon, PlusIcon } from 'lucide-react'
+import { CheckIcon, ChevronsUpDownIcon, PlusIcon, XIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -36,6 +36,7 @@ export function EntityCombobox({
   emptyText = 'Keine Treffer.',
   onCreateNew,
   createNewLabel = 'Neu anlegen…',
+  onClear,
 }: {
   items: ComboboxItem[]
   value: number | undefined
@@ -46,6 +47,8 @@ export function EntityCombobox({
   /** Called with the current search text, so the caller can prefill its create dialog. */
   onCreateNew?: (search: string) => void
   createNewLabel?: string
+  /** If given, shows a small "×" to unset the selection — for an optional field. */
+  onClear?: () => void
 }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -62,7 +65,24 @@ export function EntityCombobox({
           className="w-full min-w-0 justify-between font-normal"
         >
           <span className="truncate">{selected ? selected.label : placeholder}</span>
-          <ChevronsUpDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
+          <span className="ml-2 flex shrink-0 items-center gap-1">
+            {selected && onClear && (
+              // Buttons disable pointer-events on descendant <svg>s (so their own click
+              // always wins), so the click target here must be this non-svg wrapper.
+              <span
+                role="button"
+                aria-label="Auswahl entfernen"
+                className="rounded-sm opacity-50 hover:opacity-100"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClear()
+                }}
+              >
+                <XIcon className="size-4" />
+              </span>
+            )}
+            <ChevronsUpDownIcon className="size-4 opacity-50" />
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-(--radix-popover-trigger-width) p-0">

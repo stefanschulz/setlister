@@ -2,7 +2,7 @@ import { type Album, type AlbumInput, albumInputSchema } from '@setlister/shared
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PlusIcon, XIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ApiError } from '@/api/client'
+import { EntityCombobox } from '@/components/entity-combobox'
 import { ListStatus } from '@/components/list-status'
 import { PaginationBar } from '@/components/pagination-bar'
 import { SortableHead, type SortDirection } from '@/components/sortable-table-head'
@@ -30,8 +31,10 @@ import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { usePagination } from '@/hooks/use-pagination'
 import { emptyToUndefined } from '@/lib/form'
 import { useAlbums, useCreateAlbum, useDeleteAlbum, useUpdateAlbum } from '@/queries/albums'
+import { useLabels } from '@/queries/labels'
+import { LabelDialog } from './LabelsPage'
 
-type SortColumn = 'title' | 'link'
+type SortColumn = 'title' | 'link' | 'label'
 
 interface Row {
   album: Album
@@ -40,6 +43,7 @@ interface Row {
 const COLUMNS: { key: SortColumn; label: string }[] = [
   { key: 'title', label: 'Titel' },
   { key: 'link', label: 'Link' },
+  { key: 'label', label: 'Label' },
 ]
 
 function compareRows(a: Row, b: Row, column: SortColumn): number {
@@ -48,13 +52,15 @@ function compareRows(a: Row, b: Row, column: SortColumn): number {
       return a.album.title.localeCompare(b.album.title, 'de')
     case 'link':
       return (a.album.link ?? '').localeCompare(b.album.link ?? '', 'de')
+    case 'label':
+      return (a.album.label?.name ?? '').localeCompare(b.album.label?.name ?? '', 'de')
   }
 }
 
-const emptyValues: AlbumInput = { title: '', link: undefined }
+const emptyValues: AlbumInput = { title: '', link: undefined, labelId: undefined }
 
 function toFormValues(album: Album): AlbumInput {
-  return { title: album.title, link: album.link ?? undefined }
+  return { title: album.title, link: album.link ?? undefined, labelId: album.labelId ?? undefined }
 }
 
 export function AlbumDialog({
@@ -74,10 +80,14 @@ export function AlbumDialog({
 }) {
   const createAlbum = useCreateAlbum()
   const updateAlbum = useUpdateAlbum()
+  const { data: labels } = useLabels()
   const form = useForm<AlbumInput>({
     resolver: zodResolver(albumInputSchema),
     defaultValues: emptyValues,
   })
+
+  const [newLabelDialogOpen, setNewLabelDialogOpen] = useState(false)
+  const [newLabelName, setNewLabelName] = useState('')
 
   useEffect(() => {
     if (open) {
@@ -103,6 +113,7 @@ export function AlbumDialog({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -123,6 +134,38 @@ export function AlbumDialog({
               <p className="text-xs text-destructive">{form.formState.errors.link.message}</p>
             )}
           </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Label</Label>
+            <Controller
+              control={form.control}
+              name="labelId"
+              render={({ field }) => (
+                <EntityCombobox
+                  items={(labels ?? []).map((label) => ({
+                    id: label.id,
+                    label: label.name,
+                    sublabel: label.link ?? undefined,
+                  }))}
+                  value={field.value || undefined}
+                  onChange={field.onChange}
+                  // null, not undefined: react-hook-form's Controller falls back to the
+                  // field's last non-undefined default value if set to undefined outside
+                  // of a full form reset. null is treated as a real value and clears it;
+                  // the shared albumInputSchema normalizes null -> undefined on submit.
+                  onClear={() => field.onChange(null)}
+                  placeholder="Label wählen (optional)"
+                  onCreateNew={(search) => {
+                    setNewLabelName(search)
+                    setNewLabelDialogOpen(true)
+                  }}
+                  createNewLabel="Neues Label anlegen…"
+                />
+              )}
+            />
+            {form.formState.errors.labelId && (
+              <p className="text-xs text-destructive">{form.formState.errors.labelId.message}</p>
+            )}
+          </div>
           <DialogFooter>
             <Button type="submit" disabled={form.formState.isSubmitting}>
               Speichern
@@ -131,6 +174,15 @@ export function AlbumDialog({
         </form>
       </DialogContent>
     </Dialog>
+
+    <LabelDialog
+      label={null}
+      initialName={newLabelName}
+      open={newLabelDialogOpen}
+      onOpenChange={setNewLabelDialogOpen}
+      onCreated={(newLabel) => form.setValue('labelId', newLabel.id)}
+    />
+    </>
   )
 }
 
@@ -145,16 +197,19 @@ export default function AlbumsPage() {
 
   const [filterTitle, setFilterTitle] = useState('')
   const [filterLink, setFilterLink] = useState('')
+  const [filterLabel, setFilterLabel] = useState('')
   // Clearing a field (manually or via reset) applies instantly — only new,
   // non-empty text gets debounced.
   const debouncedFilterTitle = useDebouncedValue(filterTitle, filterTitle ? 300 : 0)
   const debouncedFilterLink = useDebouncedValue(filterLink, filterLink ? 300 : 0)
+  const debouncedFilterLabel = useDebouncedValue(filterLabel, filterLabel ? 300 : 0)
 
-  const hasActiveFilters = Boolean(filterTitle || filterLink)
+  const hasActiveFilters = Boolean(filterTitle || filterLink || filterLabel)
 
   function resetFilters() {
     setFilterTitle('')
     setFilterLink('')
+    setFilterLabel('')
   }
 
   function handleSort(column: SortColumn) {
@@ -171,16 +226,18 @@ export default function AlbumsPage() {
   const filteredSorted = useMemo(() => {
     const titleNeedle = debouncedFilterTitle.trim().toLowerCase()
     const linkNeedle = debouncedFilterLink.trim().toLowerCase()
+    const labelNeedle = debouncedFilterLabel.trim().toLowerCase()
 
     const filtered = rows.filter(
       (row) =>
         (!titleNeedle || row.album.title.toLowerCase().includes(titleNeedle)) &&
-        (!linkNeedle || (row.album.link ?? '').toLowerCase().includes(linkNeedle)),
+        (!linkNeedle || (row.album.link ?? '').toLowerCase().includes(linkNeedle)) &&
+        (!labelNeedle || (row.album.label?.name ?? '').toLowerCase().includes(labelNeedle)),
     )
 
     const sign = sortDirection === 'asc' ? 1 : -1
     return filtered.sort((a, b) => sign * compareRows(a, b, sortColumn))
-  }, [rows, debouncedFilterTitle, debouncedFilterLink, sortColumn, sortDirection])
+  }, [rows, debouncedFilterTitle, debouncedFilterLink, debouncedFilterLabel, sortColumn, sortDirection])
 
   const { pageSize, setPageSize, page, setPage, totalPages, pageItems: pageRows } = usePagination(
     filteredSorted,
@@ -189,7 +246,7 @@ export default function AlbumsPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedFilterTitle, debouncedFilterLink, setPage])
+  }, [debouncedFilterTitle, debouncedFilterLink, debouncedFilterLabel, setPage])
 
   function openCreate() {
     setDialogAlbum(null)
@@ -265,13 +322,21 @@ export default function AlbumsPage() {
                   className="h-8"
                 />
               </TableHead>
+              <TableHead>
+                <Input
+                  value={filterLabel}
+                  onChange={(e) => setFilterLabel(e.target.value)}
+                  placeholder="Filtern…"
+                  className="h-8"
+                />
+              </TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
             {pageRows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
                   Keine Treffer für die aktuellen Filter.
                 </TableCell>
               </TableRow>
@@ -280,6 +345,7 @@ export default function AlbumsPage() {
               <TableRow key={album.id}>
                 <TableCell>{album.title}</TableCell>
                 <TableCell>{album.link ?? '–'}</TableCell>
+                <TableCell>{album.label?.name ?? '–'}</TableCell>
                 <TableCell className="flex justify-end gap-2 text-right">
                   <Button variant="outline" size="sm" onClick={() => openEdit(album)}>
                     Bearbeiten
