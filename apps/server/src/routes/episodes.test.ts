@@ -173,6 +173,22 @@ describe("PUT /api/episodes/:id", () => {
     expect(body.teaser).toBeNull();
     expect(body.script).toBeNull();
   });
+
+  it("also accepts an explicit null for teaser/script (not just omission)", async () => {
+    const created = await (
+      await createEpisode({ number: 1, headline: "H", topic: "T", teaser: "Teaser", script: "Script" })
+    ).json();
+
+    const res = await app.request(`/api/episodes/${created.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ number: 1, headline: "H", topic: "T", teaser: null, script: null }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.teaser).toBeNull();
+    expect(body.script).toBeNull();
+  });
 });
 
 describe("PUT /api/episodes/:id/playlist", () => {

@@ -16,8 +16,10 @@ export const episodeInputSchema = z
       .nullable()
       .optional(),
     // Free-text notes, both fully optional (unlike headline/topic, never required).
-    teaser: z.string().optional(),
-    script: z.string().optional(),
+    // Nullable like airDate above: the client's "clear" action can send an
+    // explicit null (see the labelId precedent on albumInputSchema), not just omit the field.
+    teaser: z.string().nullable().optional(),
+    script: z.string().nullable().optional(),
   })
   .superRefine((data, ctx) => {
     if (!data.airDate) return;
