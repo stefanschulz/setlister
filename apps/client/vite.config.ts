@@ -1,7 +1,9 @@
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vite'
+// vitest/config re-exports defineConfig with the `test` field typed in,
+// merged with Vite's own config type.
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -23,5 +25,9 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3000',
     },
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
   },
 })
