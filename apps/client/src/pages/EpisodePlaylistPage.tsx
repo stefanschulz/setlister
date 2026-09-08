@@ -301,8 +301,10 @@ function PlaylistContent({
         number: episode.number,
         suffix: episode.suffix,
         headline: episode.headline,
+        teaser: episode.teaser,
+        script: episode.script,
       }),
-    [outputEntries, channels, episode.number, episode.suffix, episode.headline],
+    [outputEntries, channels, episode.number, episode.suffix, episode.headline, episode.teaser, episode.script],
   )
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
@@ -435,11 +437,17 @@ function PlaylistContent({
           <h2 className="font-medium">Vorschau</h2>
           <Tabs defaultValue="html">
             <TabsList className="h-auto flex-wrap justify-start gap-2 group-data-[orientation=horizontal]/tabs:h-auto">
+              <TabsTrigger value="intro" className="flex-none rounded-full px-3">
+                Intro
+              </TabsTrigger>
               <TabsTrigger value="html" className="flex-none rounded-full px-3">
                 HTML
               </TabsTrigger>
               <TabsTrigger value="labels" className="flex-none rounded-full px-3">
                 Labels
+              </TabsTrigger>
+              <TabsTrigger value="script" className="flex-none rounded-full px-3">
+                Skript
               </TabsTrigger>
               {channels?.map((channel) => (
                 <TabsTrigger
@@ -451,6 +459,21 @@ function PlaylistContent({
                 </TabsTrigger>
               ))}
             </TabsList>
+
+            <TabsContent value="intro" className="flex flex-col gap-2">
+              <p className="rounded-md border p-3 text-sm whitespace-pre-wrap">
+                {preview.introText || '–'}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="self-start"
+                onClick={() => copyToClipboard(preview.introText, 'Intro-Text')}
+              >
+                <CopyIcon /> Intro-Text kopieren
+              </Button>
+            </TabsContent>
 
             <TabsContent value="html" className="flex flex-col gap-2">
               <div
@@ -491,6 +514,21 @@ function PlaylistContent({
                 onClick={() => copyToClipboard(preview.labelsText, 'Labels')}
               >
                 <CopyIcon /> Labels kopieren
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="script" className="flex flex-col gap-2">
+              <p className="rounded-md border p-3 text-sm whitespace-pre-wrap">
+                {preview.scriptText || '–'}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="self-start"
+                onClick={() => copyToClipboard(preview.scriptText, 'Skript')}
+              >
+                <CopyIcon /> Skript kopieren
               </Button>
             </TabsContent>
 

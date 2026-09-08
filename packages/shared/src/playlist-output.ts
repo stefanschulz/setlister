@@ -33,6 +33,8 @@ export interface PlaylistEntryForOutput {
 
 export interface EpisodeForOutput extends EpisodeNumber {
   headline: string;
+  teaser: string | null;
+  script: string | null;
 }
 
 export interface OutputBundle {
@@ -43,6 +45,10 @@ export interface OutputBundle {
   text: Record<number, string>;
   /** Full ready-to-post caption per channel (headline pattern, {artists} = that channel's `text`). */
   headlineText: Record<number, string>;
+  /** The episode's teaser note, followed by an artist/album list. */
+  introText: string;
+  /** The episode's script note, verbatim ("" if none). */
+  scriptText: string;
   /** The playlist's labels' Facebook reference names, "+++"-wrapped and -separated. */
   labelsText: string;
 }
@@ -66,8 +72,37 @@ export function buildAllOutputs(
     plainText: buildPlainTextFragment(sorted),
     text,
     headlineText,
+    introText: buildIntroFragment(sorted, episode.teaser ?? ""),
+    scriptText: episode.script ?? "",
     labelsText: buildLabelsFragment(sorted),
   };
+}
+
+/**
+ * Synthetic channel id for buildIntroFragment's use of buildTextFragment
+ * below — never matches a real OutputChannel.id (which start at 1), so
+ * referenceNameForChannel always falls back to the artist's plain name.
+ */
+const INTRO_LIST_CHANNEL_ID = -1;
+
+/**
+ * Renders the Intro-Text: the episode's free-text teaser note, followed by
+ * a blank line and an artist/album list — the same "<Künstler°> (<Album>)"
+ * format the (now retired) "Teaser" output channel used, reusing
+ * buildTextFragment with a synthetic channel so plain artist names are used
+ * (Intro-Text isn't posted to any one channel, so no reference-name
+ * substitution applies).
+ */
+export function buildIntroFragment(entries: PlaylistEntryForOutput[], teaser: string): string {
+  const list = buildTextFragment(entries, {
+    id: INTRO_LIST_CHANNEL_ID,
+    name: "",
+    pattern: "{artists} ({album})",
+    headlinePattern: "",
+  });
+  const teaserTrimmed = teaser.trim();
+  if (teaserTrimmed && list) return `${teaserTrimmed}\n\n${list}`;
+  return teaserTrimmed || list;
 }
 
 /**

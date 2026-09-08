@@ -5,6 +5,7 @@ import {
   buildContributorsHtml,
   buildHeadlineFragment,
   buildHtmlFragment,
+  buildIntroFragment,
   buildLabelsFragment,
   buildLinkedHtml,
   buildPlainTextFragment,
@@ -13,7 +14,13 @@ import {
   type PlaylistEntryForOutput,
 } from "./playlist-output.js";
 
-const episode: EpisodeForOutput = { number: 821, suffix: "", headline: "Crispy variations" };
+const episode: EpisodeForOutput = {
+  number: 821,
+  suffix: "",
+  headline: "Crispy variations",
+  teaser: null,
+  script: null,
+};
 
 function entry(overrides: Partial<PlaylistEntryForOutput["track"]> = {}, position = 0): PlaylistEntryForOutput {
   return {
@@ -236,6 +243,8 @@ describe("buildAllOutputs", () => {
     );
     expect(result.headlineText[threads.id]).toBe("Episode 821 having Artist A");
     expect(result.labelsText).toBe("");
+    expect(result.introText).toBe("Artist A (Album)");
+    expect(result.scriptText).toBe("");
   });
 
   it("includes labelsText", () => {
@@ -243,6 +252,13 @@ describe("buildAllOutputs", () => {
       entry({ album: { title: "Album", link: null, label: { id: 1, facebookReferenceName: "label.a" } } }),
     ];
     expect(buildAllOutputs(entries, [], episode).labelsText).toBe("+++\n@label.a\n+++");
+  });
+
+  it("includes introText (teaser + list) and scriptText, from the episode's teaser/script", () => {
+    const episodeWithNotes: EpisodeForOutput = { ...episode, teaser: "Teaser note", script: "Script note" };
+    const result = buildAllOutputs([entry()], [], episodeWithNotes);
+    expect(result.introText).toBe("Teaser note\n\nArtist A (Album)");
+    expect(result.scriptText).toBe("Script note");
   });
 });
 
@@ -254,7 +270,13 @@ describe("buildHeadlineFragment", () => {
       pattern: "{artists}",
       headlinePattern: "{headline} at episode {episode} having {artists}",
     };
-    const suffixedEpisode: EpisodeForOutput = { number: 103, suffix: "v1", headline: "Test" };
+    const suffixedEpisode: EpisodeForOutput = {
+      number: 103,
+      suffix: "v1",
+      headline: "Test",
+      teaser: null,
+      script: null,
+    };
     expect(buildHeadlineFragment("Artist A, Artist B", suffixedEpisode, channel)).toBe(
       "Test at episode 103v1 having Artist A, Artist B",
     );
@@ -275,6 +297,48 @@ describe("buildContributorsHtml", () => {
       { role: "ORIGINAL", position: 0, artist: { name: "A & B", websiteUrl: null, socialReferences: [] } },
     ]);
     expect(html).toBe("A &amp; B");
+  });
+});
+
+describe("buildIntroFragment", () => {
+  it("returns just the artist/album list when there's no teaser", () => {
+    expect(buildIntroFragment([entry()], "")).toBe("Artist A (Album)");
+  });
+
+  it("returns just the (trimmed) teaser when there are no playlist entries", () => {
+    expect(buildIntroFragment([], "  Teaser note  ")).toBe("Teaser note");
+  });
+
+  it("joins teaser and list with a blank line when both are present", () => {
+    expect(buildIntroFragment([entry()], "Teaser note")).toBe("Teaser note\n\nArtist A (Album)");
+  });
+
+  it("returns an empty string when there's neither a teaser nor any playlist entries", () => {
+    expect(buildIntroFragment([], "")).toBe("");
+  });
+
+  it("uses the artist's plain name, not a channel reference name (not tied to any one channel)", () => {
+    const entries = [
+      entry({
+        contributors: [
+          {
+            role: "ORIGINAL",
+            position: 0,
+            artist: {
+              name: "Artist A",
+              websiteUrl: null,
+              socialReferences: [{ channelId: 1, referenceName: "@artist-a" }],
+            },
+          },
+        ],
+      }),
+    ];
+    expect(buildIntroFragment(entries, "")).toBe("Artist A (Album)");
+  });
+
+  it("dedupes identical artist/album entries, same as the retired Teaser channel's pattern did", () => {
+    const entries = [entry({ title: "One" }, 0), entry({ title: "Two" }, 1)];
+    expect(buildIntroFragment(entries, "")).toBe("Artist A (Album)");
   });
 });
 
