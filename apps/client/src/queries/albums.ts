@@ -20,7 +20,12 @@ export function useUpdateAlbum() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, input }: { id: number; input: AlbumInput }) => api.put<Album>(`/albums/${id}`, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KEY });
+      // Tracks embed their full Album, so the playlist page's inline editing
+      // needs this too (e.g. the "no album link" marker).
+      queryClient.invalidateQueries({ queryKey: ["tracks"] });
+    },
   });
 }
 

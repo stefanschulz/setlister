@@ -1,6 +1,7 @@
 import {
   buildAllOutputs,
   formatEpisodeNumber,
+  type Album,
   type Artist,
   type ContributorRole,
   type EpisodeDetail,
@@ -33,9 +34,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ApiError } from '@/api/client'
 import { EntityCombobox } from '@/components/entity-combobox'
+import { cn } from '@/lib/utils'
 import { useEpisode, useSetPlaylist } from '@/queries/episodes'
 import { useOutputChannels } from '@/queries/output-channels'
 import { useTracks } from '@/queries/tracks'
+import { AlbumDialog } from './AlbumsPage'
 import { ArtistDialog } from './ArtistsPage'
 import { TrackDialog } from './TracksPage'
 
@@ -51,12 +54,57 @@ function copyToClipboard(text: string, label: string) {
     .catch(() => toast.error('Kopieren fehlgeschlagen'))
 }
 
+/** Handlers to open the edit dialog for each entity a playlist row can link to. */
+interface RowEditHandlers {
+  onEditArtist: (artist: Artist) => void
+  onEditTrack: (track: Track) => void
+  onEditAlbum: (album: Album) => void
+}
+
+/**
+ * A clickable name/title within a playlist row — opens the entity's edit
+ * dialog. Styled as plain text with an underline-on-hover rather than a
+ * conventional link color, since in this row almost every word is one.
+ */
+function EditableText({
+  onClick,
+  children,
+  className,
+}: {
+  onClick: () => void
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <button
+      type="button"
+      className={cn('cursor-pointer text-left hover:underline underline-offset-2', className)}
+      title="Bearbeiten"
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick()
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+/** A trailing "*" marking an entity with no link (website/album) on record. */
+function NoLinkMarker() {
+  return (
+    <span className="text-muted-foreground" title="Kein Link hinterlegt">
+      *
+    </span>
+  )
+}
+
 /**
  * Renders a track's contributors the same way formatContributorList (see
  * packages/shared/src/contributor-format.ts) joins them as text — "A, B & C",
- * "A feat. B", "A vs B" etc. — but as individual React nodes so a contributor
- * without any social-media reference can be rendered as a clickable link
- * instead of plain text.
+ * "A feat. B", "A vs B" etc. — but as individual React nodes: each name is an
+ * edit link, followed by "*" if the artist has no website link, and its
+ * social-media reference count in parentheses.
  */
 function renderContributors(
   contributors: Track['contributors'],
@@ -65,23 +113,15 @@ function renderContributors(
   const byRole = (role: ContributorRole) =>
     contributors.filter((c) => c.role === role).sort((a, b) => a.position - b.position)
 
-  const nameNode = (c: Track['contributors'][number]) =>
-    c.artist.socialReferences.length === 0 ? (
-      <button
-        key={c.id}
-        type="button"
-        className="text-amber-700 underline-offset-2 hover:underline dark:text-amber-400"
-        title="Keine Social-Links hinterlegt – zum Bearbeiten klicken"
-        onClick={(e) => {
-          e.stopPropagation()
-          onEditArtist(c.artist)
-        }}
-      >
-        {c.artist.name}
-      </button>
-    ) : (
-      <span key={c.id}>{c.artist.name}</span>
-    )
+  const nameNode = (c: Track['contributors'][number]) => (
+    <span key={c.id} className="whitespace-nowrap">
+      <EditableText onClick={() => onEditArtist(c.artist)}>{c.artist.name}</EditableText>
+      {!c.artist.websiteUrl && <NoLinkMarker />}{' '}
+      <span className="text-xs text-muted-foreground" title="Anzahl Social-Media-Links">
+        ({c.artist.socialReferences.length})
+      </span>
+    </span>
+  )
 
   const joinGroup = (group: ReturnType<typeof byRole>): ReactNode[] =>
     group.flatMap((c, i) => {
@@ -104,17 +144,33 @@ function renderContributors(
   return nodes
 }
 
+/** Builds a playlist row's full line: contributors, track title, and album — each individually editable. */
+function renderPlaylistRowContent(track: Track, handlers: RowEditHandlers): ReactNode {
+  return (
+    <>
+      <span className="font-medium">
+        {renderContributors(track.contributors, handlers.onEditArtist)}
+        {' - '}
+        <EditableText onClick={() => handlers.onEditTrack(track)}>{track.title}</EditableText>
+      </span>{' '}
+      <span className="text-muted-foreground">
+        (
+        <EditableText className="text-muted-foreground" onClick={() => handlers.onEditAlbum(track.album)}>
+          {track.album.title}
+        </EditableText>
+        {!track.album.link && <NoLinkMarker />})
+      </span>
+    </>
+  )
+}
+
 function SortablePlaylistRow({
   entry,
-  contributors,
-  trackTitle,
-  subtitle,
+  content,
   onRemove,
 }: {
   entry: LocalEntry
-  contributors: ReactNode
-  trackTitle: string
-  subtitle: string
+  content: ReactNode
   onRemove: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -136,12 +192,7 @@ function SortablePlaylistRow({
       >
         <GripVerticalIcon className="size-4" />
       </button>
-      <div className="min-w-0 flex-1 text-sm">
-        <span className="font-medium">
-          {contributors} - {trackTitle}
-        </span>{' '}
-        <span className="text-muted-foreground">{subtitle}</span>
-      </div>
+      <div className="min-w-0 flex-1 text-sm">{content}</div>
       <Button type="button" variant="ghost" size="icon-sm" onClick={onRemove}>
         <TrashIcon />
       </Button>
@@ -201,10 +252,30 @@ function PlaylistContent({
   const [newTrackTitle, setNewTrackTitle] = useState('')
   const [editArtist, setEditArtist] = useState<Artist | null>(null)
   const [editArtistDialogOpen, setEditArtistDialogOpen] = useState(false)
+  const [editTrack, setEditTrack] = useState<Track | null>(null)
+  const [editTrackDialogOpen, setEditTrackDialogOpen] = useState(false)
+  const [editAlbum, setEditAlbum] = useState<Album | null>(null)
+  const [editAlbumDialogOpen, setEditAlbumDialogOpen] = useState(false)
 
   function openArtistEdit(artist: Artist) {
     setEditArtist(artist)
     setEditArtistDialogOpen(true)
+  }
+
+  function openTrackEdit(track: Track) {
+    setEditTrack(track)
+    setEditTrackDialogOpen(true)
+  }
+
+  function openAlbumEdit(album: Album) {
+    setEditAlbum(album)
+    setEditAlbumDialogOpen(true)
+  }
+
+  const rowEditHandlers: RowEditHandlers = {
+    onEditArtist: openArtistEdit,
+    onEditTrack: openTrackEdit,
+    onEditAlbum: openAlbumEdit,
   }
 
   const tracksById = useMemo(() => new Map((tracks ?? []).map((t) => [t.id, t])), [tracks])
@@ -327,9 +398,7 @@ function PlaylistContent({
                     <SortablePlaylistRow
                       key={entry.localId}
                       entry={entry}
-                      contributors={renderContributors(track.contributors, openArtistEdit)}
-                      trackTitle={track.title}
-                      subtitle={`(${track.album.title})`}
+                      content={renderPlaylistRowContent(track, rowEditHandlers)}
                       onRemove={() => removeEntry(entry.localId)}
                     />
                   )
@@ -455,6 +524,10 @@ function PlaylistContent({
       />
 
       <ArtistDialog artist={editArtist} open={editArtistDialogOpen} onOpenChange={setEditArtistDialogOpen} />
+
+      <TrackDialog track={editTrack} open={editTrackDialogOpen} onOpenChange={setEditTrackDialogOpen} />
+
+      <AlbumDialog album={editAlbum} open={editAlbumDialogOpen} onOpenChange={setEditAlbumDialogOpen} />
 
       <Dialog
         open={blocker.state === 'blocked'}
