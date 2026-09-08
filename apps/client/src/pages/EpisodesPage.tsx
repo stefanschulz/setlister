@@ -44,6 +44,12 @@ import {
   useUpdateEpisode,
 } from '@/queries/episodes'
 
+/** The number after the current highest episode number, for prefilling a new episode. Defaults to 1 if there are none yet. */
+function nextEpisodeNumber(episodes: Episode[] | undefined): number {
+  if (!episodes || episodes.length === 0) return 1
+  return Math.max(...episodes.map((e) => e.number)) + 1
+}
+
 type SortColumn = 'number' | 'headline' | 'topic'
 
 interface Row {
@@ -94,14 +100,17 @@ export function EpisodeDialog({
 }) {
   const createEpisode = useCreateEpisode()
   const updateEpisode = useUpdateEpisode()
+  const { data: episodes } = useEpisodes()
   const form = useForm<EpisodeInput>({
     resolver: zodResolver(episodeInputSchema),
     defaultValues: emptyValues,
   })
 
   useEffect(() => {
-    if (open) form.reset(episode ? toFormValues(episode) : emptyValues)
-  }, [open, episode, form])
+    if (open) {
+      form.reset(episode ? toFormValues(episode) : { ...emptyValues, number: nextEpisodeNumber(episodes) })
+    }
+  }, [open, episode, episodes, form])
 
   async function onSubmit(values: EpisodeInput) {
     try {
