@@ -151,7 +151,8 @@ export function AlbumDialog({
                   // null, not undefined: react-hook-form's Controller falls back to the
                   // field's last non-undefined default value if set to undefined outside
                   // of a full form reset. null is treated as a real value and clears it;
-                  // the shared albumInputSchema normalizes null -> undefined on submit.
+                  // albumInputSchema accepts null directly (labelId is .nullable()), and
+                  // the server normalizes it to a NULL column on write.
                   onClear={() => field.onChange(null)}
                   placeholder="Label wählen (optional)"
                   onCreateNew={(search) => {
