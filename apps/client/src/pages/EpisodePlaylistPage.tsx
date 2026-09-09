@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { CopyIcon, GripVerticalIcon, TrashIcon } from 'lucide-react'
+import { CopyIcon, GripVerticalIcon, PencilIcon, TrashIcon } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useBlocker, useParams } from 'react-router'
 import { toast } from 'sonner'
@@ -40,6 +40,7 @@ import { useOutputChannels } from '@/queries/output-channels'
 import { useTracks } from '@/queries/tracks'
 import { AlbumDialog } from './AlbumsPage'
 import { ArtistDialog } from './ArtistsPage'
+import { EpisodeDialog } from './EpisodesPage'
 import { TrackDialog } from './TracksPage'
 
 interface LocalEntry {
@@ -256,6 +257,7 @@ function PlaylistContent({
   const [editTrackDialogOpen, setEditTrackDialogOpen] = useState(false)
   const [editAlbum, setEditAlbum] = useState<Album | null>(null)
   const [editAlbumDialogOpen, setEditAlbumDialogOpen] = useState(false)
+  const [editEpisodeDialogOpen, setEditEpisodeDialogOpen] = useState(false)
 
   function openArtistEdit(artist: Artist) {
     setEditArtist(artist)
@@ -374,6 +376,15 @@ function PlaylistContent({
           <Badge variant={episode.published ? 'default' : 'secondary'}>
             {episode.published ? 'Veröffentlicht' : 'Entwurf'}
           </Badge>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            title="Episode bearbeiten"
+            onClick={() => setEditEpisodeDialogOpen(true)}
+          >
+            <PencilIcon />
+          </Button>
         </div>
         <p className="text-sm text-muted-foreground">{episode.topic}</p>
       </div>
@@ -435,19 +446,19 @@ function PlaylistContent({
 
         <div className="flex flex-col gap-3 md:sticky md:top-6 md:self-start">
           <h2 className="font-medium">Vorschau</h2>
-          <Tabs defaultValue="html">
+          <Tabs defaultValue="intro">
             <TabsList className="h-auto flex-wrap justify-start gap-2 group-data-[orientation=horizontal]/tabs:h-auto">
               <TabsTrigger value="intro" className="flex-none rounded-full px-3">
                 Intro
+              </TabsTrigger>
+              <TabsTrigger value="script" className="flex-none rounded-full px-3">
+                Skript
               </TabsTrigger>
               <TabsTrigger value="html" className="flex-none rounded-full px-3">
                 HTML
               </TabsTrigger>
               <TabsTrigger value="labels" className="flex-none rounded-full px-3">
                 Labels
-              </TabsTrigger>
-              <TabsTrigger value="script" className="flex-none rounded-full px-3">
-                Skript
               </TabsTrigger>
               {channels?.map((channel) => (
                 <TabsTrigger
@@ -472,6 +483,21 @@ function PlaylistContent({
                 onClick={() => copyToClipboard(preview.introText, 'Intro-Text')}
               >
                 <CopyIcon /> Intro-Text kopieren
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="script" className="flex flex-col gap-2">
+              <p className="rounded-md border p-3 text-sm whitespace-pre-wrap">
+                {preview.scriptText || '–'}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="self-start"
+                onClick={() => copyToClipboard(preview.scriptText, 'Skript')}
+              >
+                <CopyIcon /> Skript kopieren
               </Button>
             </TabsContent>
 
@@ -514,21 +540,6 @@ function PlaylistContent({
                 onClick={() => copyToClipboard(preview.labelsText, 'Labels')}
               >
                 <CopyIcon /> Labels kopieren
-              </Button>
-            </TabsContent>
-
-            <TabsContent value="script" className="flex flex-col gap-2">
-              <p className="rounded-md border p-3 text-sm whitespace-pre-wrap">
-                {preview.scriptText || '–'}
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="self-start"
-                onClick={() => copyToClipboard(preview.scriptText, 'Skript')}
-              >
-                <CopyIcon /> Skript kopieren
               </Button>
             </TabsContent>
 
@@ -584,6 +595,8 @@ function PlaylistContent({
       <TrackDialog track={editTrack} open={editTrackDialogOpen} onOpenChange={setEditTrackDialogOpen} />
 
       <AlbumDialog album={editAlbum} open={editAlbumDialogOpen} onOpenChange={setEditAlbumDialogOpen} />
+
+      <EpisodeDialog episode={episode} open={editEpisodeDialogOpen} onOpenChange={setEditEpisodeDialogOpen} />
 
       <Dialog
         open={blocker.state === 'blocked'}
