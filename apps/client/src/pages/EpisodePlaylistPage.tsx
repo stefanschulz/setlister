@@ -454,8 +454,8 @@ function PlaylistContent({
               <TabsTrigger value="script" className="flex-none rounded-full px-3">
                 Skript
               </TabsTrigger>
-              <TabsTrigger value="html" className="flex-none rounded-full px-3">
-                HTML
+              <TabsTrigger value="tracklist" className="flex-none rounded-full px-3">
+                Tracklist
               </TabsTrigger>
               <TabsTrigger value="labels" className="flex-none rounded-full px-3">
                 Labels
@@ -501,7 +501,7 @@ function PlaylistContent({
               </Button>
             </TabsContent>
 
-            <TabsContent value="html" className="flex flex-col gap-2">
+            <TabsContent value="tracklist" className="flex flex-col gap-2">
               <div
                 className="rounded-md border p-3 text-sm"
                 dangerouslySetInnerHTML={{ __html: preview.html }}
@@ -524,6 +524,15 @@ function PlaylistContent({
                   onClick={() => copyToClipboard(preview.plainText, 'Text')}
                 >
                   <CopyIcon /> Als Text kopieren
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => copyToClipboard(preview.tracklistJson, 'JSON')}
+                >
+                  <CopyIcon /> Als JSON kopieren
                 </Button>
               </div>
             </TabsContent>

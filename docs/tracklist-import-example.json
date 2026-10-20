@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "subtitle": "Join the crowd",
+  "imageCredit": "Photography by J. Noack<br><a href=\"https://www.flickr.com/photos/judithnoack/\">flickr.com/photos/judithnoack</a>",
+  "tracks": [
+    {
+      "artists": [
+        { "name": "Aurory", "role": "original", "url": "https://soundcloud.com/aurory" }
+      ],
+      "title": "Yeah Oh",
+      "album": "Yeah Oh",
+      "albumUrl": "https://open.spotify.com/intl-de/album/5xPkkRl7NClQOsNgIdASke",
+      "label": ""
+    },
+    {
+      "artists": [
+        { "name": "The Grab Society", "role": "original", "url": "https://www.manfredthomaser.de/#TheGrabSociety" },
+        { "name": "Talking to Ghosts", "role": "remix", "url": "https://soundcloud.com/talkingtoghosts" }
+      ],
+      "title": "Reincarnation (Glare devoxed)",
+      "album": "Reincarnation (Remixed)",
+      "albumUrl": "https://thegrabsociety.bandcamp.com/album/reincarnation-remixed",
+      "label": "EchoZone"
+    }
+  ],
+  "events": [
+    { "date": "2026-11-01", "name": "Spheric Audio Vision", "url": "https://kalender.klaerwerk-krefeld.org/veranstaltung/spheric-audio-vision/", "place": "Krefeld (DE)" }
+  ]
+}

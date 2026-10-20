@@ -276,6 +276,24 @@ describe("GET /api/episodes/:id/output — against the seed data's compilation e
     expect(body.html).toContain(`Artist B vs Artist C - Remix Track (${linkedComp})`);
     expect(body.html).toContain(`${linkedA}, Artist B & Artist C - Trio Cut (${linkedComp})`);
 
+    const json = JSON.parse(body.tracklistJson);
+    expect(json.version).toBe(1);
+    const jsonTrack = (title: string) => json.tracks.find((t: { title: string }) => t.title === title);
+    expect(jsonTrack("Intro")).toMatchObject({
+      artists: [{ name: "Solo Artist", role: "original" }],
+      album: "Album One",
+      label: "",
+    });
+    expect(jsonTrack("Feature Track")).toMatchObject({
+      artists: [
+        { name: "Artist A", role: "original", url: "https://artist-a.example" },
+        { name: "Artist C", role: "featuring" },
+      ],
+      album: "Compilation Vol. 1",
+      albumUrl: "https://label.example/comp-1",
+    });
+    expect(jsonTrack("Feature Track").label).not.toBe("");
+
     // Artist A has a Bluesky reference ("@artist-a") from the seed; the others don't.
     expect(body.text[channelIdByName.Bluesky]).toContain("@artist-a");
     expect(body.text[channelIdByName.Bluesky]).toContain("Solo Artist");
@@ -291,6 +309,7 @@ describe("GET /api/episodes/:id/output — against the seed data's compilation e
     const res = await app.request("/api/episodes/2/output");
     const body = await res.json();
     expect(body.html).toBe("<ul>\n\n</ul>");
+    expect(JSON.parse(body.tracklistJson)).toEqual({ version: 1, tracks: [] });
     expect(body.text[facebookId]).toBe("");
   });
 });

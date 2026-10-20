@@ -21,7 +21,7 @@ export interface TrackForOutput {
   album: {
     title: string;
     link: string | null;
-    label: { id: number; facebookReferenceName: string | null } | null;
+    label: { id: number; name: string; facebookReferenceName: string | null } | null;
   };
   contributors: ContributorForOutput[];
 }
@@ -39,6 +39,8 @@ export interface EpisodeForOutput extends EpisodeNumber {
 
 export interface OutputBundle {
   html: string;
+  /** The playlist as JSON for the syndae tracklist import (see docs/IMPORT-TRACKLIST.md). */
+  tracklistJson: string;
   /** Same listing as `html`, but plain text (no tags, no links). */
   plainText: string;
   /** Keyed by OutputChannel.id, since channel names are user-defined and not fixed. */
@@ -69,6 +71,7 @@ export function buildAllOutputs(
 
   return {
     html: buildHtmlFragment(sorted),
+    tracklistJson: buildTracklistJson(sorted),
     plainText: buildPlainTextFragment(sorted),
     text,
     headlineText,
@@ -178,6 +181,44 @@ export function buildHtmlFragment(entries: PlaylistEntryForOutput[]): string {
   });
 
   return `<ul>\n${items.map((item) => `  ${item}`).join("\n")}\n</ul>`;
+}
+
+const JSON_ROLES: Record<ContributorRole, string> = {
+  ORIGINAL: "original",
+  FEATURING: "featuring",
+  REMIX: "remix",
+};
+
+const JSON_ROLE_ORDER: ContributorRole[] = ["ORIGINAL", "FEATURING", "REMIX"];
+
+/**
+ * Renders the playlist as the JSON the syndae tracklist import reads
+ * (docs/IMPORT-TRACKLIST.md, "Format 2"). Artists are listed in the same
+ * order `formatContributorList` joins them (original, featuring, remix, each
+ * by position). Optional keys without a value (artist `url`, `albumUrl`) are
+ * omitted; `label` is "" when the album has none, as in the example file.
+ */
+export function buildTracklistJson(entries: PlaylistEntryForOutput[]): string {
+  const sorted = [...entries].sort((a, b) => a.position - b.position);
+
+  const tracks = sorted.map(({ track }) => ({
+    artists: JSON_ROLE_ORDER.flatMap((role) =>
+      track.contributors
+        .filter((c) => c.role === role)
+        .sort((a, b) => a.position - b.position)
+        .map((c) => ({
+          name: c.artist.name,
+          role: JSON_ROLES[role],
+          ...(c.artist.websiteUrl ? { url: c.artist.websiteUrl } : {}),
+        })),
+    ),
+    title: track.title,
+    album: track.album.title,
+    ...(track.album.link ? { albumUrl: track.album.link } : {}),
+    label: track.album.label?.name ?? "",
+  }));
+
+  return JSON.stringify({ version: 1, tracks }, null, 2);
 }
 
 /**

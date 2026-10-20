@@ -10,6 +10,7 @@ import {
   buildLinkedHtml,
   buildPlainTextFragment,
   buildTextFragment,
+  buildTracklistJson,
   type EpisodeForOutput,
   type PlaylistEntryForOutput,
 } from "./playlist-output.js";
@@ -103,6 +104,130 @@ describe("buildHtmlFragment", () => {
       }),
     ]);
     expect(html).toContain("A vs B - Track (Album)");
+  });
+});
+
+describe("buildTracklistJson", () => {
+  // Mirrors the two tracks of docs/tracklist-import-example.json.
+  const aurory = entry(
+    {
+      title: "Yeah Oh",
+      album: { title: "Yeah Oh", link: "https://open.spotify.com/intl-de/album/5xPkkRl7NClQOsNgIdASke", label: null },
+      contributors: [
+        {
+          role: "ORIGINAL",
+          position: 0,
+          artist: { name: "Aurory", websiteUrl: "https://soundcloud.com/aurory", socialReferences: [] },
+        },
+      ],
+    },
+    0,
+  );
+  const grabSociety = entry(
+    {
+      title: "Reincarnation (Glare devoxed)",
+      album: {
+        title: "Reincarnation (Remixed)",
+        link: "https://thegrabsociety.bandcamp.com/album/reincarnation-remixed",
+        label: { id: 1, name: "EchoZone", facebookReferenceName: null },
+      },
+      contributors: [
+        {
+          role: "REMIX",
+          position: 0,
+          artist: { name: "Talking to Ghosts", websiteUrl: "https://soundcloud.com/talkingtoghosts", socialReferences: [] },
+        },
+        {
+          role: "ORIGINAL",
+          position: 0,
+          artist: { name: "The Grab Society", websiteUrl: "https://www.manfredthomaser.de/#TheGrabSociety", socialReferences: [] },
+        },
+      ],
+    },
+    1,
+  );
+
+  it("produces the format of the example import file", () => {
+    const parsed = JSON.parse(buildTracklistJson([aurory, grabSociety]));
+    expect(parsed).toEqual({
+      version: 1,
+      tracks: [
+        {
+          artists: [{ name: "Aurory", role: "original", url: "https://soundcloud.com/aurory" }],
+          title: "Yeah Oh",
+          album: "Yeah Oh",
+          albumUrl: "https://open.spotify.com/intl-de/album/5xPkkRl7NClQOsNgIdASke",
+          label: "",
+        },
+        {
+          artists: [
+            { name: "The Grab Society", role: "original", url: "https://www.manfredthomaser.de/#TheGrabSociety" },
+            { name: "Talking to Ghosts", role: "remix", url: "https://soundcloud.com/talkingtoghosts" },
+          ],
+          title: "Reincarnation (Glare devoxed)",
+          album: "Reincarnation (Remixed)",
+          albumUrl: "https://thegrabsociety.bandcamp.com/album/reincarnation-remixed",
+          label: "EchoZone",
+        },
+      ],
+    });
+  });
+
+  it("emits keys in the documented order, version first", () => {
+    const parsed = JSON.parse(buildTracklistJson([aurory]));
+    expect(Object.keys(parsed)).toEqual(["version", "tracks"]);
+    expect(Object.keys(parsed.tracks[0])).toEqual(["artists", "title", "album", "albumUrl", "label"]);
+    expect(Object.keys(parsed.tracks[0].artists[0])).toEqual(["name", "role", "url"]);
+  });
+
+  it("omits url and albumUrl when there is no link, but always writes label", () => {
+    const parsed = JSON.parse(buildTracklistJson([entry()]));
+    expect(parsed.tracks[0]).toEqual({
+      artists: [{ name: "Artist A", role: "original" }],
+      title: "Track",
+      album: "Album",
+      label: "",
+    });
+  });
+
+  it("orders artists original, featuring, remix, each by position", () => {
+    const contributor = (name: string, role: "ORIGINAL" | "FEATURING" | "REMIX", position: number) => ({
+      role,
+      position,
+      artist: { name, websiteUrl: null, socialReferences: [] },
+    });
+    const parsed = JSON.parse(
+      buildTracklistJson([
+        entry({
+          contributors: [
+            contributor("Remixer", "REMIX", 0),
+            contributor("Guest", "FEATURING", 0),
+            contributor("B", "ORIGINAL", 1),
+            contributor("A", "ORIGINAL", 0),
+          ],
+        }),
+      ]),
+    );
+    expect(parsed.tracks[0].artists.map((a: { name: string; role: string }) => `${a.name}:${a.role}`)).toEqual([
+      "A:original",
+      "B:original",
+      "Guest:featuring",
+      "Remixer:remix",
+    ]);
+  });
+
+  it("sorts tracks by position", () => {
+    const parsed = JSON.parse(buildTracklistJson([entry({ title: "Second" }, 1), entry({ title: "First" }, 0)]));
+    expect(parsed.tracks.map((t: { title: string }) => t.title)).toEqual(["First", "Second"]);
+  });
+
+  it("returns an empty tracks list for an empty playlist", () => {
+    expect(JSON.parse(buildTracklistJson([]))).toEqual({ version: 1, tracks: [] });
+  });
+
+  it("round-trips special characters through JSON", () => {
+    const parsed = JSON.parse(buildTracklistJson([entry({ title: 'Say "Hi" & <b>' })]));
+    expect(parsed.tracks[0].title).toBe('Say "Hi" & <b>');
   });
 });
 
@@ -242,6 +367,7 @@ describe("buildAllOutputs", () => {
       "Crispy variations at episode 821 having Artist A (Album)",
     );
     expect(result.headlineText[threads.id]).toBe("Episode 821 having Artist A");
+    expect(JSON.parse(result.tracklistJson).tracks).toHaveLength(1);
     expect(result.labelsText).toBe("");
     expect(result.introText).toBe("Artist A (Album)");
     expect(result.scriptText).toBe("");
@@ -249,7 +375,7 @@ describe("buildAllOutputs", () => {
 
   it("includes labelsText", () => {
     const entries = [
-      entry({ album: { title: "Album", link: null, label: { id: 1, facebookReferenceName: "label.a" } } }),
+      entry({ album: { title: "Album", link: null, label: { id: 1, name: "Label 1", facebookReferenceName: "label.a" } } }),
     ];
     expect(buildAllOutputs(entries, [], episode).labelsText).toBe("+++\n@label.a\n+++");
   });
@@ -348,20 +474,20 @@ describe("buildLabelsFragment", () => {
   });
 
   it("returns an empty string when the label has no Facebook reference name", () => {
-    const entries = [entry({ album: { title: "Album", link: null, label: { id: 1, facebookReferenceName: null } } })];
+    const entries = [entry({ album: { title: "Album", link: null, label: { id: 1, name: "Label 1", facebookReferenceName: null } } })];
     expect(buildLabelsFragment(entries)).toBe("");
   });
 
   it("wraps a single label's Facebook reference name in +++ lines, @-prefixed", () => {
     const entries = [
-      entry({ album: { title: "Album", link: null, label: { id: 1, facebookReferenceName: "label.a" } } }),
+      entry({ album: { title: "Album", link: null, label: { id: 1, name: "Label 1", facebookReferenceName: "label.a" } } }),
     ];
     expect(buildLabelsFragment(entries)).toBe("+++\n@label.a\n+++");
   });
 
   it("doesn't double up the @ if the reference name already has one", () => {
     const entries = [
-      entry({ album: { title: "Album", link: null, label: { id: 1, facebookReferenceName: "@label.a" } } }),
+      entry({ album: { title: "Album", link: null, label: { id: 1, name: "Label 1", facebookReferenceName: "@label.a" } } }),
     ];
     expect(buildLabelsFragment(entries)).toBe("+++\n@label.a\n+++");
   });
@@ -369,11 +495,11 @@ describe("buildLabelsFragment", () => {
   it("separates multiple distinct labels with +++", () => {
     const entries = [
       entry(
-        { album: { title: "Album A", link: null, label: { id: 1, facebookReferenceName: "label.a" } } },
+        { album: { title: "Album A", link: null, label: { id: 1, name: "Label 1", facebookReferenceName: "label.a" } } },
         0,
       ),
       entry(
-        { album: { title: "Album B", link: null, label: { id: 2, facebookReferenceName: "label.b" } } },
+        { album: { title: "Album B", link: null, label: { id: 2, name: "Label 2", facebookReferenceName: "label.b" } } },
         1,
       ),
     ];
@@ -383,11 +509,11 @@ describe("buildLabelsFragment", () => {
   it("dedupes the same label (by id) across multiple tracks", () => {
     const entries = [
       entry(
-        { title: "Track One", album: { title: "Album A", link: null, label: { id: 1, facebookReferenceName: "label.a" } } },
+        { title: "Track One", album: { title: "Album A", link: null, label: { id: 1, name: "Label 1", facebookReferenceName: "label.a" } } },
         0,
       ),
       entry(
-        { title: "Track Two", album: { title: "Album A", link: null, label: { id: 1, facebookReferenceName: "label.a" } } },
+        { title: "Track Two", album: { title: "Album A", link: null, label: { id: 1, name: "Label 1", facebookReferenceName: "label.a" } } },
         1,
       ),
     ];
@@ -397,11 +523,11 @@ describe("buildLabelsFragment", () => {
   it("skips labels without a Facebook reference name but keeps others", () => {
     const entries = [
       entry(
-        { album: { title: "Album A", link: null, label: { id: 1, facebookReferenceName: null } } },
+        { album: { title: "Album A", link: null, label: { id: 1, name: "Label 1", facebookReferenceName: null } } },
         0,
       ),
       entry(
-        { album: { title: "Album B", link: null, label: { id: 2, facebookReferenceName: "label.b" } } },
+        { album: { title: "Album B", link: null, label: { id: 2, name: "Label 2", facebookReferenceName: "label.b" } } },
         1,
       ),
     ];
