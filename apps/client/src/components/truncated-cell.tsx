@@ -58,7 +58,7 @@ export function TruncatedCell({
         }}
       >
         <TooltipTrigger asChild>{content}</TooltipTrigger>
-        <TooltipContent className="max-w-md break-all">{value}</TooltipContent>
+        <TooltipContent className="max-w-md break-words">{value}</TooltipContent>
       </Tooltip>
     </TableCell>
   )

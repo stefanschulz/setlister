@@ -43,6 +43,7 @@ import { EntityCombobox } from '@/components/entity-combobox'
 import { ListStatus } from '@/components/list-status'
 import { PaginationBar } from '@/components/pagination-bar'
 import { DeleteAction, EditAction } from '@/components/row-actions'
+import { TruncatedCell } from '@/components/truncated-cell'
 import { SortableHead, type SortDirection } from '@/components/sortable-table-head'
 import {
   TrackUsageDialog,
@@ -509,7 +510,7 @@ export default function TracksPage() {
               <TableRow key={track.id}>
                 <TableCell>{track.title}</TableCell>
                 <TableCell>{track.album.title}</TableCell>
-                <TableCell>{contributorsText}</TableCell>
+                <TruncatedCell value={contributorsText} />
                 <UsageCells usage={usage} />
                 <TableCell className="flex justify-end gap-2 text-right">
                   <UsageButton onClick={() => openUsage(track)} />
