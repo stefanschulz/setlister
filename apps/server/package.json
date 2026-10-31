@@ -1,7 +1,7 @@
 {
   "name": "@setlister/server",
   "private": true,
-  "version": "1.5.0",
+  "version": "1.5.1",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
-    "@setlister/shared": "^1.5.0",
+    "@setlister/shared": "^1.5.1",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.3"
