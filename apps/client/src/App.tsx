@@ -96,7 +96,9 @@ function App() {
           </SidebarContent>
         </Sidebar>
 
-        <SidebarInset>
+        {/* min-w-0 lets the inset shrink to the space beside the sidebar, so a wide
+            table scrolls inside its own container instead of overflowing the page. */}
+        <SidebarInset className="min-w-0">
           <header className="flex items-center gap-2 border-b px-4 py-3">
             <SidebarTrigger />
           </header>
