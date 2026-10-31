@@ -23,6 +23,8 @@ export function createSetlistsRouter(db: Db) {
       episodeId: e.episodeId,
       episodeNumber: e.episode.number,
       episodeSuffix: e.episode.suffix,
+      episodeHeadline: e.episode.headline,
+      episodeAirDate: e.episode.airDate,
       track: e.track,
     }));
     return c.json(result);

@@ -82,5 +82,7 @@ export interface SetlistEntry {
   episodeId: number;
   episodeNumber: number;
   episodeSuffix: string;
+  episodeHeadline: string;
+  episodeAirDate: string | null;
   track: Track;
 }

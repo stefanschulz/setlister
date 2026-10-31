@@ -62,6 +62,9 @@ describe("GET /api/setlists", () => {
     expect(body).toHaveLength(2);
     expect(body.map((e: { episodeNumber: number }) => e.episodeNumber).sort()).toEqual([1, 2]);
     expect(body.every((e: { track: { title: string } }) => e.track.title === "Track")).toBe(true);
+    const first = body.find((e: { episodeNumber: number }) => e.episodeNumber === 1);
+    expect(first.episodeHeadline).toBe("First");
+    expect(first.episodeAirDate).toBeNull();
   });
 
   it("returns an empty list when no episode has a playlist yet", async () => {

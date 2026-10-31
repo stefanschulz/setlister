@@ -4,6 +4,7 @@ export * from "./contributor-role.js";
 export * from "./entities.js";
 export * from "./episode-number.js";
 export * from "./playlist-output.js";
+export * from "./usage.js";
 export * from "./contributor-format.js";
 export * from "./schemas/artist.js";
 export * from "./schemas/album.js";
