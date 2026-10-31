@@ -61,6 +61,87 @@ describe('EntityCombobox', () => {
     expect(onCreateNew).toHaveBeenCalledWith('Brand New Artist')
   })
 
+  it('filters by text, shows the empty text when nothing matches, and resets the search on close', async () => {
+    const user = userEvent.setup()
+    render(<EntityCombobox items={items} value={undefined} onChange={vi.fn()} placeholder="Pick one" />)
+
+    await user.click(screen.getByRole('combobox'))
+    await user.type(screen.getByPlaceholderText('Suchen…'), 'artist b')
+    expect(screen.queryByText('Artist A')).not.toBeInTheDocument()
+    expect(screen.getByText('Artist B')).toBeInTheDocument()
+
+    await user.clear(screen.getByPlaceholderText('Suchen…'))
+    await user.type(screen.getByPlaceholderText('Suchen…'), 'zzz')
+    expect(screen.getByText('Keine Treffer.')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('combobox'))
+    expect(screen.getByPlaceholderText('Suchen…')).toHaveValue('')
+    expect(screen.getByText('Artist A')).toBeInTheDocument()
+  })
+
+  it('shows at most 50 matches and says how many more there are', async () => {
+    const user = userEvent.setup()
+    const many = Array.from({ length: 120 }, (_, i) => ({ id: i + 1, label: `Album ${i + 1}` }))
+    render(<EntityCombobox items={many} value={undefined} onChange={vi.fn()} placeholder="Pick one" />)
+
+    await user.click(screen.getByRole('combobox'))
+
+    expect(screen.getAllByRole('option')).toHaveLength(50)
+    expect(screen.getByText(/und 70 weitere/)).toBeInTheDocument()
+  })
+
+  it('does not highlight same-titled entries together (items are keyed by id)', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    const twins = [
+      { id: 1, label: 'Crossroads' },
+      { id: 2, label: 'Crossroads' },
+    ]
+    render(<EntityCombobox items={twins} value={undefined} onChange={onChange} placeholder="Pick one" />)
+
+    await user.click(screen.getByRole('combobox'))
+    await user.click(screen.getAllByText('Crossroads')[1])
+
+    expect(onChange).toHaveBeenCalledWith(2)
+  })
+
+  it('keeps "create new" available when there are no matches and shows the search text in it', async () => {
+    const user = userEvent.setup()
+    const onCreateNew = vi.fn()
+    render(
+      <EntityCombobox
+        items={items}
+        value={undefined}
+        onChange={vi.fn()}
+        placeholder="Pick one"
+        onCreateNew={onCreateNew}
+        createNewLabel="Create new…"
+      />,
+    )
+
+    await user.click(screen.getByRole('combobox'))
+    await user.type(screen.getByPlaceholderText('Suchen…'), 'Nobody')
+
+    expect(screen.getByText('Keine Treffer.')).toBeInTheDocument()
+    expect(screen.getByText('„Nobody“')).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    expect(onCreateNew).toHaveBeenCalledWith('Nobody')
+  })
+
+  it('scrolls the list back to the top when the search text changes', async () => {
+    const user = userEvent.setup()
+    const many = Array.from({ length: 30 }, (_, i) => ({ id: i + 1, label: `Album ${i + 1}` }))
+    render(<EntityCombobox items={many} value={undefined} onChange={vi.fn()} placeholder="Pick one" />)
+
+    await user.click(screen.getByRole('combobox'))
+    const list = document.querySelector('[cmdk-list]') as HTMLElement
+    list.scrollTop = 500
+    await user.type(screen.getByPlaceholderText('Suchen…'), 'album')
+
+    expect(list.scrollTop).toBe(0)
+  })
+
   it('does not offer "create new" when onCreateNew is not given', async () => {
     const user = userEvent.setup()
     render(<EntityCombobox items={items} value={undefined} onChange={vi.fn()} placeholder="Pick one" />)

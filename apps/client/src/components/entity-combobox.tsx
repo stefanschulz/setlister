@@ -1,16 +1,15 @@
 import { CheckIcon, ChevronsUpDownIcon, PlusIcon, XIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { filterComboboxItems } from '@/lib/combobox-filter'
 import { cn } from '@/lib/utils'
 
 export interface ComboboxItem {
@@ -20,12 +19,16 @@ export interface ComboboxItem {
   sublabel?: string
 }
 
+/** How many matches the list renders at once; the rest is summarized as "N weitere". */
+const MAX_VISIBLE_ITEMS = 50
+
 /**
  * Searchable replacement for a plain <Select> once a list can realistically
  * grow past a few dozen entries (tracks, artists) — type-to-filter instead of
- * scrolling a long dropdown. Optionally offers a trailing "+ create new" row
- * that hands off to the caller (e.g. to open that entity's own create dialog)
- * rather than creating anything itself.
+ * scrolling a long dropdown. Optionally offers a "+ create new" row, pinned to
+ * the bottom of the popup so it is always in reach, that hands off to the
+ * caller (e.g. to open that entity's own create dialog) rather than creating
+ * anything itself.
  */
 export function EntityCombobox({
   items,
@@ -52,10 +55,30 @@ export function EntityCombobox({
 }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const listRef = useRef<HTMLDivElement>(null)
   const selected = items.find((item) => item.id === value)
 
+  const matches = useMemo(() => filterComboboxItems(items, search), [items, search])
+  const visible = matches.slice(0, MAX_VISIBLE_ITEMS)
+  const hiddenCount = matches.length - visible.length
+
+  // The list keeps its scroll offset when the matches change; without this the
+  // best matches can end up scrolled out of view above the visible area.
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = 0
+  }, [search])
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    if (!next) setSearch('')
+  }
+
+  function close() {
+    handleOpenChange(false)
+  }
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           type="button"
@@ -86,18 +109,22 @@ export function EntityCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
-        <Command>
+        {/* Filtering is done by filterComboboxItems, not cmdk's fuzzy matcher. */}
+        <Command shouldFilter={false}>
           <CommandInput placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
-          <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
+          <CommandList ref={listRef}>
+            {visible.length === 0 && (
+              <div className="py-6 text-center text-sm">{emptyText}</div>
+            )}
             <CommandGroup>
-              {items.map((item) => (
+              {visible.map((item) => (
                 <CommandItem
                   key={item.id}
-                  value={item.sublabel ? `${item.label} ${item.sublabel}` : item.label}
+                  // Unique per item, so same-titled entries are never highlighted together.
+                  value={String(item.id)}
                   onSelect={() => {
                     onChange(item.id)
-                    setOpen(false)
+                    close()
                   }}
                 >
                   <CheckIcon className={cn('size-4', item.id === value ? 'opacity-100' : 'opacity-0')} />
@@ -110,23 +137,28 @@ export function EntityCombobox({
                 </CommandItem>
               ))}
             </CommandGroup>
+            {hiddenCount > 0 && (
+              <p className="px-3 py-2 text-xs text-muted-foreground">
+                … und {hiddenCount} weitere – Suche eingrenzen
+              </p>
+            )}
             {onCreateNew && (
-              <>
-                <CommandSeparator />
-                <CommandGroup forceMount>
-                  <CommandItem
-                    value={`__create_new__`}
-                    forceMount
-                    onSelect={() => {
-                      setOpen(false)
-                      onCreateNew(search)
-                    }}
-                  >
-                    <PlusIcon className="size-4" />
-                    {createNewLabel}
-                  </CommandItem>
-                </CommandGroup>
-              </>
+              <CommandGroup forceMount className="sticky bottom-0 border-t bg-popover">
+                <CommandItem
+                  value="__create_new__"
+                  forceMount
+                  onSelect={() => {
+                    close()
+                    onCreateNew(search)
+                  }}
+                >
+                  <PlusIcon className="size-4" />
+                  <span className="shrink-0">{createNewLabel}</span>
+                  {search.trim() && (
+                    <span className="truncate text-muted-foreground">„{search.trim()}“</span>
+                  )}
+                </CommandItem>
+              </CommandGroup>
             )}
           </CommandList>
         </Command>
