@@ -50,6 +50,10 @@ export function useSetPlaylist(episodeId: number) {
   return useMutation({
     mutationFn: (trackIds: number[]) =>
       api.put<{ playlist: EpisodePlaylistEntry[] }>(`/episodes/${episodeId}/playlist`, { trackIds }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: detailKey(episodeId) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: detailKey(episodeId) })
+      // Albums/Tracks/Künstler derive their "Verwendung" from the cross-episode setlist.
+      queryClient.invalidateQueries({ queryKey: ['setlists'] })
+    },
   })
 }

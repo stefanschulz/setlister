@@ -1,4 +1,4 @@
-import { type Album, type AlbumInput, albumInputSchema } from '@setlister/shared'
+import { NO_USAGE, type Album, type AlbumInput, albumInputSchema, type Usage } from '@setlister/shared'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PlusIcon, XIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -26,24 +26,36 @@ import { ApiError } from '@/api/client'
 import { EntityCombobox } from '@/components/entity-combobox'
 import { ListStatus } from '@/components/list-status'
 import { PaginationBar } from '@/components/pagination-bar'
+import { DeleteAction, EditAction } from '@/components/row-actions'
+import { TruncatedCell } from '@/components/truncated-cell'
 import { SortableHead, type SortDirection } from '@/components/sortable-table-head'
+import {
+  AlbumUsageDialog,
+  UsageButton,
+  UsageCells,
+} from '@/components/usage'
+import { compareLastPlayed, comparePlayed } from '@/lib/usage'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { usePagination } from '@/hooks/use-pagination'
 import { emptyToUndefined } from '@/lib/form'
 import { useAlbums, useCreateAlbum, useDeleteAlbum, useUpdateAlbum } from '@/queries/albums'
 import { useLabels } from '@/queries/labels'
+import { useUsageIndex } from '@/queries/usage'
 import { LabelDialog } from './LabelsPage'
 
-type SortColumn = 'title' | 'link' | 'label'
+type SortColumn = 'title' | 'link' | 'label' | 'played' | 'lastPlayed'
 
 interface Row {
   album: Album
+  usage: Usage
 }
 
 const COLUMNS: { key: SortColumn; label: string }[] = [
   { key: 'title', label: 'Titel' },
   { key: 'link', label: 'Link' },
   { key: 'label', label: 'Label' },
+  { key: 'played', label: 'Gespielt' },
+  { key: 'lastPlayed', label: 'Zuletzt gespielt' },
 ]
 
 function compareRows(a: Row, b: Row, column: SortColumn): number {
@@ -54,6 +66,10 @@ function compareRows(a: Row, b: Row, column: SortColumn): number {
       return (a.album.link ?? '').localeCompare(b.album.link ?? '', 'de')
     case 'label':
       return (a.album.label?.name ?? '').localeCompare(b.album.label?.name ?? '', 'de')
+    case 'played':
+      return comparePlayed(a.usage, b.usage)
+    case 'lastPlayed':
+      return compareLastPlayed(a.usage, b.usage)
   }
 }
 
@@ -190,8 +206,11 @@ export function AlbumDialog({
 export default function AlbumsPage() {
   const { data: albums, isLoading, isError, error } = useAlbums()
   const deleteAlbum = useDeleteAlbum()
+  const { index: usageIndex } = useUsageIndex()
   const [dialogAlbum, setDialogAlbum] = useState<Album | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [usageAlbum, setUsageAlbum] = useState<Album | null>(null)
+  const [usageOpen, setUsageOpen] = useState(false)
 
   const [sortColumn, setSortColumn] = useState<SortColumn>('title')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
@@ -222,7 +241,10 @@ export default function AlbumsPage() {
     }
   }
 
-  const rows: Row[] = useMemo(() => (albums ?? []).map((album) => ({ album })), [albums])
+  const rows: Row[] = useMemo(
+    () => (albums ?? []).map((album) => ({ album, usage: usageIndex.albums.get(album.id) ?? NO_USAGE })),
+    [albums, usageIndex],
+  )
 
   const filteredSorted = useMemo(() => {
     const titleNeedle = debouncedFilterTitle.trim().toLowerCase()
@@ -257,6 +279,11 @@ export default function AlbumsPage() {
   function openEdit(album: Album) {
     setDialogAlbum(album)
     setDialogOpen(true)
+  }
+
+  function openUsage(album: Album) {
+    setUsageAlbum(album)
+    setUsageOpen(true)
   }
 
   async function onDelete(album: Album) {
@@ -332,28 +359,28 @@ export default function AlbumsPage() {
                 />
               </TableHead>
               <TableHead />
+              <TableHead />
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
             {pageRows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                   Keine Treffer für die aktuellen Filter.
                 </TableCell>
               </TableRow>
             )}
-            {pageRows.map(({ album }) => (
+            {pageRows.map(({ album, usage }) => (
               <TableRow key={album.id}>
                 <TableCell>{album.title}</TableCell>
-                <TableCell>{album.link ?? '–'}</TableCell>
+                <TruncatedCell value={album.link} link />
                 <TableCell>{album.label?.name ?? '–'}</TableCell>
+                <UsageCells usage={usage} />
                 <TableCell className="flex justify-end gap-2 text-right">
-                  <Button variant="outline" size="sm" onClick={() => openEdit(album)}>
-                    Bearbeiten
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onDelete(album)}>
-                    Löschen
-                  </Button>
+                  <UsageButton onClick={() => openUsage(album)} />
+                  <EditAction onClick={() => openEdit(album)} />
+                  <DeleteAction onClick={() => onDelete(album)} />
                 </TableCell>
               </TableRow>
             ))}
@@ -372,6 +399,8 @@ export default function AlbumsPage() {
       </ListStatus>
 
       <AlbumDialog album={dialogAlbum} open={dialogOpen} onOpenChange={setDialogOpen} />
+
+      <AlbumUsageDialog album={usageAlbum} open={usageOpen} onOpenChange={setUsageOpen} />
     </div>
   )
 }

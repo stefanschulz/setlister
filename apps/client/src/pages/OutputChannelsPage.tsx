@@ -23,6 +23,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ApiError } from '@/api/client'
+import { DeleteAction, EditAction } from '@/components/row-actions'
+import { TruncatedCell } from '@/components/truncated-cell'
 import { ListStatus } from '@/components/list-status'
 import {
   useCreateOutputChannel,
@@ -177,15 +179,11 @@ export default function OutputChannelsPage() {
             {channels?.map((channel) => (
               <TableRow key={channel.id}>
                 <TableCell>{channel.name}</TableCell>
-                <TableCell className="font-mono text-xs">{channel.pattern}</TableCell>
-                <TableCell className="font-mono text-xs">{channel.headlinePattern || '–'}</TableCell>
+                <TruncatedCell value={channel.pattern} className="font-mono text-xs" />
+                <TruncatedCell value={channel.headlinePattern || null} className="font-mono text-xs" />
                 <TableCell className="flex justify-end gap-2 text-right">
-                  <Button variant="outline" size="sm" onClick={() => openEdit(channel)}>
-                    Bearbeiten
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onDelete(channel)}>
-                    Löschen
-                  </Button>
+                  <EditAction onClick={() => openEdit(channel)} />
+                  <DeleteAction onClick={() => onDelete(channel)} />
                 </TableCell>
               </TableRow>
             ))}

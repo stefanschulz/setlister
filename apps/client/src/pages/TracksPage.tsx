@@ -1,8 +1,10 @@
 import {
   CONTRIBUTOR_ROLES,
+  NO_USAGE,
   type ContributorRole,
   type Track,
   type TrackInput,
+  type Usage,
   trackContributorInputSchema,
 } from '@setlister/shared'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -40,12 +42,20 @@ import { ApiError } from '@/api/client'
 import { EntityCombobox } from '@/components/entity-combobox'
 import { ListStatus } from '@/components/list-status'
 import { PaginationBar } from '@/components/pagination-bar'
+import { DeleteAction, EditAction } from '@/components/row-actions'
 import { SortableHead, type SortDirection } from '@/components/sortable-table-head'
+import {
+  TrackUsageDialog,
+  UsageButton,
+  UsageCells,
+} from '@/components/usage'
+import { compareLastPlayed, comparePlayed } from '@/lib/usage'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { usePagination } from '@/hooks/use-pagination'
 import { useAlbums } from '@/queries/albums'
 import { useArtists } from '@/queries/artists'
 import { useCreateTrack, useDeleteTrack, useTracks, useUpdateTrack } from '@/queries/tracks'
+import { useUsageIndex } from '@/queries/usage'
 import { AlbumDialog } from './AlbumsPage'
 import { ArtistDialog } from './ArtistsPage'
 
@@ -55,17 +65,20 @@ const ROLE_LABELS: Record<ContributorRole, string> = {
   REMIX: 'Remix',
 }
 
-type SortColumn = 'title' | 'album' | 'contributors'
+type SortColumn = 'title' | 'album' | 'contributors' | 'played' | 'lastPlayed'
 
 interface Row {
   track: Track
   contributorsText: string
+  usage: Usage
 }
 
 const COLUMNS: { key: SortColumn; label: string }[] = [
   { key: 'title', label: 'Titel' },
   { key: 'album', label: 'Album' },
   { key: 'contributors', label: 'Künstler' },
+  { key: 'played', label: 'Gespielt' },
+  { key: 'lastPlayed', label: 'Zuletzt gespielt' },
 ]
 
 function compareRows(a: Row, b: Row, column: SortColumn): number {
@@ -76,6 +89,10 @@ function compareRows(a: Row, b: Row, column: SortColumn): number {
       return a.track.album.title.localeCompare(b.track.album.title, 'de')
     case 'contributors':
       return a.contributorsText.localeCompare(b.contributorsText, 'de')
+    case 'played':
+      return comparePlayed(a.usage, b.usage)
+    case 'lastPlayed':
+      return compareLastPlayed(a.usage, b.usage)
   }
 }
 
@@ -309,8 +326,11 @@ export function TrackDialog({
 export default function TracksPage() {
   const { data: tracks, isLoading, isError, error } = useTracks()
   const deleteTrack = useDeleteTrack()
+  const { index: usageIndex } = useUsageIndex()
   const [dialogTrack, setDialogTrack] = useState<Track | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [usageTrack, setUsageTrack] = useState<Track | null>(null)
+  const [usageOpen, setUsageOpen] = useState(false)
 
   const [sortColumn, setSortColumn] = useState<SortColumn>('title')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
@@ -348,8 +368,9 @@ export default function TracksPage() {
         contributorsText: track.contributors
           .map((c) => `${c.artist.name} (${ROLE_LABELS[c.role]})`)
           .join(', '),
+        usage: usageIndex.tracks.get(track.id) ?? NO_USAGE,
       })),
-    [tracks],
+    [tracks, usageIndex],
   )
 
   const filteredSorted = useMemo(() => {
@@ -392,6 +413,11 @@ export default function TracksPage() {
   function openEdit(track: Track) {
     setDialogTrack(track)
     setDialogOpen(true)
+  }
+
+  function openUsage(track: Track) {
+    setUsageTrack(track)
+    setUsageOpen(true)
   }
 
   async function onDelete(track: Track) {
@@ -467,28 +493,28 @@ export default function TracksPage() {
                 />
               </TableHead>
               <TableHead />
+              <TableHead />
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
             {pageRows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                   Keine Treffer für die aktuellen Filter.
                 </TableCell>
               </TableRow>
             )}
-            {pageRows.map(({ track, contributorsText }) => (
+            {pageRows.map(({ track, contributorsText, usage }) => (
               <TableRow key={track.id}>
                 <TableCell>{track.title}</TableCell>
                 <TableCell>{track.album.title}</TableCell>
                 <TableCell>{contributorsText}</TableCell>
+                <UsageCells usage={usage} />
                 <TableCell className="flex justify-end gap-2 text-right">
-                  <Button variant="outline" size="sm" onClick={() => openEdit(track)}>
-                    Bearbeiten
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onDelete(track)}>
-                    Löschen
-                  </Button>
+                  <UsageButton onClick={() => openUsage(track)} />
+                  <EditAction onClick={() => openEdit(track)} />
+                  <DeleteAction onClick={() => onDelete(track)} />
                 </TableCell>
               </TableRow>
             ))}
@@ -507,6 +533,8 @@ export default function TracksPage() {
       </ListStatus>
 
       <TrackDialog track={dialogTrack} open={dialogOpen} onOpenChange={setDialogOpen} />
+
+      <TrackUsageDialog track={usageTrack} open={usageOpen} onOpenChange={setUsageOpen} />
     </div>
   )
 }

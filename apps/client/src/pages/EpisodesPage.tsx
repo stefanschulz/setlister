@@ -9,7 +9,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { ListMusicIcon, PlusIcon, XIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,6 +33,7 @@ import {
 import { ApiError } from '@/api/client'
 import { ListStatus } from '@/components/list-status'
 import { PaginationBar } from '@/components/pagination-bar'
+import { DeleteAction, EditAction, RowAction } from '@/components/row-actions'
 import { SortableHead, type SortDirection } from '@/components/sortable-table-head'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { usePagination } from '@/hooks/use-pagination'
@@ -389,17 +389,9 @@ export default function EpisodesPage() {
                   </Badge>
                 </TableCell>
                 <TableCell className="flex justify-end gap-2 text-right">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/episodes/${episode.id}`}>
-                      <ListMusicIcon /> Playlist
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => openEdit(episode)}>
-                    Bearbeiten
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onDelete(episode)}>
-                    Löschen
-                  </Button>
+                  <RowAction label="Playlist" icon={ListMusicIcon} to={`/episodes/${episode.id}`} />
+                  <EditAction onClick={() => openEdit(episode)} />
+                  <DeleteAction onClick={() => onDelete(episode)} />
                 </TableCell>
               </TableRow>
             ))}

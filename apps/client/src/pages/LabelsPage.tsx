@@ -25,6 +25,8 @@ import {
 import { ApiError } from '@/api/client'
 import { ListStatus } from '@/components/list-status'
 import { PaginationBar } from '@/components/pagination-bar'
+import { DeleteAction, EditAction } from '@/components/row-actions'
+import { TruncatedCell } from '@/components/truncated-cell'
 import { SortableHead, type SortDirection } from '@/components/sortable-table-head'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { usePagination } from '@/hooks/use-pagination'
@@ -320,15 +322,11 @@ export default function LabelsPage() {
             {pageRows.map(({ label }) => (
               <TableRow key={label.id}>
                 <TableCell>{label.name}</TableCell>
-                <TableCell>{label.link ?? '–'}</TableCell>
+                <TruncatedCell value={label.link} link />
                 <TableCell>{label.facebookReferenceName ?? '–'}</TableCell>
                 <TableCell className="flex justify-end gap-2 text-right">
-                  <Button variant="outline" size="sm" onClick={() => openEdit(label)}>
-                    Bearbeiten
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onDelete(label)}>
-                    Löschen
-                  </Button>
+                  <EditAction onClick={() => openEdit(label)} />
+                  <DeleteAction onClick={() => onDelete(label)} />
                 </TableCell>
               </TableRow>
             ))}

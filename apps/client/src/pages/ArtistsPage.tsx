@@ -1,4 +1,4 @@
-import { type Artist, type ArtistInput, artistInputSchema } from '@setlister/shared'
+import { NO_USAGE, type Artist, type ArtistInput, artistInputSchema, type Usage } from '@setlister/shared'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PlusIcon, TrashIcon, XIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -32,23 +32,35 @@ import {
 import { ApiError } from '@/api/client'
 import { ListStatus } from '@/components/list-status'
 import { PaginationBar } from '@/components/pagination-bar'
+import { DeleteAction, EditAction } from '@/components/row-actions'
+import { TruncatedCell } from '@/components/truncated-cell'
 import { SortableHead, type SortDirection } from '@/components/sortable-table-head'
+import {
+  ArtistUsageDialog,
+  UsageButton,
+  UsageCells,
+} from '@/components/usage'
+import { compareLastPlayed, comparePlayed } from '@/lib/usage'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { usePagination } from '@/hooks/use-pagination'
 import { emptyToUndefined } from '@/lib/form'
 import { useArtists, useCreateArtist, useDeleteArtist, useUpdateArtist } from '@/queries/artists'
 import { useOutputChannels } from '@/queries/output-channels'
+import { useUsageIndex } from '@/queries/usage'
 
-type SortColumn = 'name' | 'realName' | 'websiteUrl'
+type SortColumn = 'name' | 'realName' | 'websiteUrl' | 'played' | 'lastPlayed'
 
 interface Row {
   artist: Artist
+  usage: Usage
 }
 
 const COLUMNS: { key: SortColumn; label: string }[] = [
   { key: 'name', label: 'Name' },
   { key: 'realName', label: 'Realname' },
   { key: 'websiteUrl', label: 'Website' },
+  { key: 'played', label: 'Gespielt' },
+  { key: 'lastPlayed', label: 'Zuletzt gespielt' },
 ]
 
 function compareRows(a: Row, b: Row, column: SortColumn): number {
@@ -59,6 +71,10 @@ function compareRows(a: Row, b: Row, column: SortColumn): number {
       return (a.artist.realName ?? '').localeCompare(b.artist.realName ?? '', 'de')
     case 'websiteUrl':
       return (a.artist.websiteUrl ?? '').localeCompare(b.artist.websiteUrl ?? '', 'de')
+    case 'played':
+      return comparePlayed(a.usage, b.usage)
+    case 'lastPlayed':
+      return compareLastPlayed(a.usage, b.usage)
   }
 }
 
@@ -219,8 +235,11 @@ export function ArtistDialog({
 export default function ArtistsPage() {
   const { data: artists, isLoading, isError, error } = useArtists()
   const deleteArtist = useDeleteArtist()
+  const { index: usageIndex } = useUsageIndex()
   const [dialogArtist, setDialogArtist] = useState<Artist | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [usageArtist, setUsageArtist] = useState<Artist | null>(null)
+  const [usageOpen, setUsageOpen] = useState(false)
 
   const [sortColumn, setSortColumn] = useState<SortColumn>('name')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
@@ -251,7 +270,10 @@ export default function ArtistsPage() {
     }
   }
 
-  const rows: Row[] = useMemo(() => (artists ?? []).map((artist) => ({ artist })), [artists])
+  const rows: Row[] = useMemo(
+    () => (artists ?? []).map((artist) => ({ artist, usage: usageIndex.artists.get(artist.id) ?? NO_USAGE })),
+    [artists, usageIndex],
+  )
 
   const filteredSorted = useMemo(() => {
     const nameNeedle = debouncedFilterName.trim().toLowerCase()
@@ -293,6 +315,11 @@ export default function ArtistsPage() {
   function openEdit(artist: Artist) {
     setDialogArtist(artist)
     setDialogOpen(true)
+  }
+
+  function openUsage(artist: Artist) {
+    setUsageArtist(artist)
+    setUsageOpen(true)
   }
 
   async function onDelete(artist: Artist) {
@@ -370,29 +397,29 @@ export default function ArtistsPage() {
               </TableHead>
               <TableHead />
               <TableHead />
+              <TableHead />
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
             {pageRows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
                   Keine Treffer für die aktuellen Filter.
                 </TableCell>
               </TableRow>
             )}
-            {pageRows.map(({ artist }) => (
+            {pageRows.map(({ artist, usage }) => (
               <TableRow key={artist.id}>
                 <TableCell>{artist.name}</TableCell>
                 <TableCell>{artist.realName ?? '–'}</TableCell>
-                <TableCell>{artist.websiteUrl ?? '–'}</TableCell>
+                <TruncatedCell value={artist.websiteUrl} link />
+                <UsageCells usage={usage} />
                 <TableCell>{artist.socialReferences.length}</TableCell>
                 <TableCell className="flex justify-end gap-2 text-right">
-                  <Button variant="outline" size="sm" onClick={() => openEdit(artist)}>
-                    Bearbeiten
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onDelete(artist)}>
-                    Löschen
-                  </Button>
+                  <UsageButton onClick={() => openUsage(artist)} />
+                  <EditAction onClick={() => openEdit(artist)} />
+                  <DeleteAction onClick={() => onDelete(artist)} />
                 </TableCell>
               </TableRow>
             ))}
@@ -411,6 +438,8 @@ export default function ArtistsPage() {
       </ListStatus>
 
       <ArtistDialog artist={dialogArtist} open={dialogOpen} onOpenChange={setDialogOpen} />
+
+      <ArtistUsageDialog artist={usageArtist} open={usageOpen} onOpenChange={setUsageOpen} />
     </div>
   )
 }
