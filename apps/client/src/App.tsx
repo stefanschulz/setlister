@@ -34,8 +34,8 @@ const navItems = [
   { to: '/setlists', label: 'Setlisten', icon: TableIcon },
   { to: '/artists', label: 'Künstler', icon: UsersIcon },
   { to: '/albums', label: 'Alben', icon: LibraryIcon },
-  { to: '/labels', label: 'Labels', icon: TagIcon },
   { to: '/tracks', label: 'Tracks', icon: Disc3Icon },
+  { to: '/labels', label: 'Labels', icon: TagIcon },
   { to: '/output-channels', label: 'Ausgabekanäle', icon: Share2Icon },
   { to: '/backup', label: 'Backup', icon: DatabaseBackupIcon },
 ]
