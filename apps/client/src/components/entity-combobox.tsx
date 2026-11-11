@@ -77,92 +77,93 @@ export function EntityCombobox({
     handleOpenChange(false)
   }
 
+  const clearable = Boolean(selected && onClear)
+
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
+    <div className="relative w-full min-w-0">
+      <Popover open={open} onOpenChange={handleOpenChange}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn('w-full min-w-0 justify-between font-normal', clearable && 'pr-14')}
+          >
+            <span className="truncate">{selected ? selected.label : placeholder}</span>
+            <ChevronsUpDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
+          {/* Filtering is done by filterComboboxItems, not cmdk's fuzzy matcher. */}
+          <Command shouldFilter={false}>
+            <CommandInput placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
+            <CommandList ref={listRef}>
+              {visible.length === 0 && (
+                <div className="py-6 text-center text-sm">{emptyText}</div>
+              )}
+              <CommandGroup>
+                {visible.map((item) => (
+                  <CommandItem
+                    key={item.id}
+                    // Unique per item, so same-titled entries are never highlighted together.
+                    value={String(item.id)}
+                    onSelect={() => {
+                      onChange(item.id)
+                      close()
+                    }}
+                  >
+                    <CheckIcon className={cn('size-4', item.id === value ? 'opacity-100' : 'opacity-0')} />
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate">{item.label}</span>
+                      {item.sublabel && (
+                        <span className="truncate text-xs text-muted-foreground">{item.sublabel}</span>
+                      )}
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              {hiddenCount > 0 && (
+                <p className="px-3 py-2 text-xs text-muted-foreground">
+                  … und {hiddenCount} weitere – Suche eingrenzen
+                </p>
+              )}
+              {onCreateNew && (
+                <CommandGroup forceMount className="sticky bottom-0 border-t bg-popover">
+                  <CommandItem
+                    value="__create_new__"
+                    forceMount
+                    onSelect={() => {
+                      close()
+                      onCreateNew(search)
+                    }}
+                  >
+                    <PlusIcon className="size-4" />
+                    <span className="shrink-0">{createNewLabel}</span>
+                    {search.trim() && (
+                      <span className="truncate text-muted-foreground">„{search.trim()}“</span>
+                    )}
+                  </CommandItem>
+                </CommandGroup>
+              )}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {clearable && (
+        // A sibling of the trigger rather than a child: a button inside a button is
+        // invalid, and a non-button wrapper would not be reachable by keyboard.
         <Button
           type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full min-w-0 justify-between font-normal"
+          variant="ghost"
+          size="icon-xs"
+          aria-label="Auswahl entfernen"
+          className="absolute top-1/2 right-7 -translate-y-1/2 opacity-60 hover:opacity-100"
+          onClick={onClear}
         >
-          <span className="truncate">{selected ? selected.label : placeholder}</span>
-          <span className="ml-2 flex shrink-0 items-center gap-1">
-            {selected && onClear && (
-              // Buttons disable pointer-events on descendant <svg>s (so their own click
-              // always wins), so the click target here must be this non-svg wrapper.
-              <span
-                role="button"
-                aria-label="Auswahl entfernen"
-                className="rounded-sm opacity-50 hover:opacity-100"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onClear()
-                }}
-              >
-                <XIcon className="size-4" />
-              </span>
-            )}
-            <ChevronsUpDownIcon className="size-4 opacity-50" />
-          </span>
+          <XIcon />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
-        {/* Filtering is done by filterComboboxItems, not cmdk's fuzzy matcher. */}
-        <Command shouldFilter={false}>
-          <CommandInput placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
-          <CommandList ref={listRef}>
-            {visible.length === 0 && (
-              <div className="py-6 text-center text-sm">{emptyText}</div>
-            )}
-            <CommandGroup>
-              {visible.map((item) => (
-                <CommandItem
-                  key={item.id}
-                  // Unique per item, so same-titled entries are never highlighted together.
-                  value={String(item.id)}
-                  onSelect={() => {
-                    onChange(item.id)
-                    close()
-                  }}
-                >
-                  <CheckIcon className={cn('size-4', item.id === value ? 'opacity-100' : 'opacity-0')} />
-                  <div className="flex min-w-0 flex-col">
-                    <span className="truncate">{item.label}</span>
-                    {item.sublabel && (
-                      <span className="truncate text-xs text-muted-foreground">{item.sublabel}</span>
-                    )}
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-            {hiddenCount > 0 && (
-              <p className="px-3 py-2 text-xs text-muted-foreground">
-                … und {hiddenCount} weitere – Suche eingrenzen
-              </p>
-            )}
-            {onCreateNew && (
-              <CommandGroup forceMount className="sticky bottom-0 border-t bg-popover">
-                <CommandItem
-                  value="__create_new__"
-                  forceMount
-                  onSelect={() => {
-                    close()
-                    onCreateNew(search)
-                  }}
-                >
-                  <PlusIcon className="size-4" />
-                  <span className="shrink-0">{createNewLabel}</span>
-                  {search.trim() && (
-                    <span className="truncate text-muted-foreground">„{search.trim()}“</span>
-                  )}
-                </CommandItem>
-              </CommandGroup>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+      )}
+    </div>
   )
 }

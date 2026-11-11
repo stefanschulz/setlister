@@ -164,17 +164,10 @@ describe('EntityCombobox', () => {
       expect(screen.queryByLabelText('Auswahl entfernen')).not.toBeInTheDocument()
     })
 
-    // Note: this does NOT regression-test the pointer-events-none bug the
-    // clear button's markup works around (shadcn's Button sets
-    // `[&_svg]:pointer-events-none` on descendant <svg>s, which made a raw
-    // <XIcon onClick=.../> unclickable in a real browser) — jsdom has no
-    // layout/hit-testing engine, so `pointer-events` has no effect here and
-    // user-event dispatches straight to whatever element the query resolves,
-    // regardless of what a browser would actually deliver the click to. That
-    // class of bug only showed up via live Docker/browser testing and would
-    // need a real-browser tool (e.g. Playwright) to catch automatically.
-    // This test still covers real behavior: the right handler fires, the
-    // wrong one doesn't, and the popover doesn't open as a side effect.
+    // Note: jsdom has no layout/hit-testing engine, so `pointer-events` has no
+    // effect here — this cannot catch a click being swallowed by an ancestor
+    // in a real browser (the reason the clear button is a sibling of the
+    // trigger and not an <svg> inside it). It covers which handler fires.
     it('calls onClear (not onChange, and without opening the popover) when clicked', async () => {
       const user = userEvent.setup()
       const onClear = vi.fn()
@@ -186,6 +179,30 @@ describe('EntityCombobox', () => {
       expect(onClear).toHaveBeenCalledTimes(1)
       expect(onChange).not.toHaveBeenCalled()
       expect(screen.queryByRole('option')).not.toBeInTheDocument()
+    })
+
+    it('is a real button that can be reached and operated with the keyboard', async () => {
+      const user = userEvent.setup()
+      const onClear = vi.fn()
+      render(<EntityCombobox items={items} value={1} onChange={vi.fn()} onClear={onClear} placeholder="Pick one" />)
+
+      // Tab order: the combobox trigger first, then the clear button.
+      await user.tab()
+      expect(screen.getByRole('combobox')).toHaveFocus()
+      await user.tab()
+      const clear = screen.getByRole('button', { name: 'Auswahl entfernen' })
+      expect(clear).toHaveFocus()
+
+      await user.keyboard('{Enter}')
+      expect(onClear).toHaveBeenCalledTimes(1)
+      await user.keyboard(' ')
+      expect(onClear).toHaveBeenCalledTimes(2)
+    })
+
+    it('is not nested inside the combobox trigger (no button inside a button)', () => {
+      render(<EntityCombobox items={items} value={1} onChange={vi.fn()} onClear={vi.fn()} placeholder="Pick one" />)
+
+      expect(screen.getByRole('combobox')).not.toContainElement(screen.getByLabelText('Auswahl entfernen'))
     })
   })
 })
