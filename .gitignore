@@ -10,3 +10,6 @@ data/
 .idea/
 /.design/
 /.data/
+
+# Symlinks auf .agents/skills (absolute Pfade, rechnerspezifisch)
+/.claude/skills/
