@@ -12,6 +12,7 @@ import {
 import { Link, Outlet, useLocation } from 'react-router'
 import { Logo } from '@/components/Logo'
 import { Toaster } from '@/components/ui/sonner'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Sidebar,
@@ -101,6 +102,9 @@ function App() {
         <SidebarInset className="min-w-0">
           <header className="flex items-center gap-2 border-b px-4 py-3">
             <SidebarTrigger />
+            <div className="ml-auto">
+              <ThemeToggle />
+            </div>
           </header>
 
           <main className="w-full flex-1 px-4 py-6">

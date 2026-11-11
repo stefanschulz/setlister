@@ -30,3 +30,19 @@ if (typeof ResizeObserver === 'undefined') {
     disconnect() {}
   }
 }
+
+// jsdom has no matchMedia; next-themes reads it for the "system" theme. Report
+// "light" and ignore listeners.
+if (typeof window.matchMedia === 'undefined') {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList
+}
